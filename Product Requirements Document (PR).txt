@@ -1,0 +1,447 @@
+# Product Requirements Document (PRD)
+
+# SmartShelf
+
+## The Operating System for Community Pharmacies
+
+**Version:** Hackathon MVP v1.0
+
+**Product Type:** Progressive Web Application (PWA)
+
+**Target Market:** Community Pharmacies in Sierra Leone
+
+**Prepared By:** SmartShelf Team
+
+---
+
+# 1. Executive Summary
+
+SmartShelf is an offline-first pharmacy operating system that helps community pharmacies prevent medicine stockouts, reduce expiry-related losses, and simplify restocking operations.
+
+The platform enables pharmacists to quickly record medicine sales through a touch-friendly interface, automatically track inventory levels, identify inventory risks, and generate supplier-ready restock requests.
+
+The Hackathon MVP focuses on solving one critical problem:
+
+> Pharmacies discover inventory problems too late.
+
+SmartShelf helps them identify these problems before they impact patients or business operations.
+
+---
+
+# 2. Problem Statement
+
+Many community pharmacies in Sierra Leone still rely on manual inventory tracking methods.
+
+These methods create several challenges:
+
+* Medicine shortages are discovered only after stock runs out.
+* Patients cannot access needed medicines when inventory is unavailable.
+* Pharmacy owners lose revenue due to stockouts.
+* Medicines expire unnoticed on shelves.
+* Restocking is manual, inconsistent, and reactive.
+* Existing inventory systems are often too complex or require stable internet connectivity.
+
+As a result, pharmacies struggle to maintain optimal inventory levels while continuing to serve customers efficiently.
+
+---
+
+# 3. Product Vision
+
+To become the operating system for community pharmacies by helping them proactively manage inventory, reduce losses, and improve medicine availability.
+
+---
+
+# 4. Product Goals
+
+## Primary Goals
+
+* Reduce medicine stockouts.
+* Reduce medicine expiry losses.
+* Simplify inventory tracking.
+* Enable inventory management without internet access.
+* Automate restocking workflows.
+
+## Hackathon Goals
+
+* Demonstrate a fully functioning offline-first pharmacy workflow.
+* Showcase inventory risk detection.
+* Demonstrate automated reorder generation.
+* Deliver a complete end-to-end user experience.
+
+---
+
+# 5. Target Users
+
+## Primary User
+
+### Community Pharmacist
+
+Responsible for:
+
+* Selling medicines
+* Managing stock
+* Monitoring inventory levels
+* Ordering new stock
+
+### Pain Points
+
+* Busy work environment
+* Limited time for data entry
+* Lack of inventory visibility
+* Unpredictable stock shortages
+* Expired medicines causing losses
+
+---
+
+# 6. User Stories
+
+## Sales Logging
+
+As a pharmacist,
+
+I want to record a medicine sale with a single tap,
+
+so that I can update inventory without slowing down customer service.
+
+---
+
+## Inventory Visibility
+
+As a pharmacist,
+
+I want to know my current stock levels,
+
+so that I can avoid unexpected shortages.
+
+---
+
+## Stockout Prevention
+
+As a pharmacist,
+
+I want SmartShelf to warn me before a medicine runs out,
+
+so that I can reorder in time.
+
+---
+
+## Expiry Prevention
+
+As a pharmacist,
+
+I want SmartShelf to identify medicines at risk of expiring,
+
+so that I can reduce waste and financial losses.
+
+---
+
+## Restocking
+
+As a pharmacist,
+
+I want SmartShelf to generate a reorder request automatically,
+
+so that I can restock inventory quickly.
+
+---
+
+# 7. Functional Requirements
+
+## Module 1: One-Tap Sales Logging
+
+### Description
+
+Allows pharmacists to record medicine sales instantly.
+
+### Requirements
+
+* Display medicine tiles on dashboard.
+* Allow one-tap sales logging.
+* Deduct inventory automatically.
+* Update inventory instantly.
+* Work offline.
+
+### Acceptance Criteria
+
+* User can record a sale in under 2 seconds.
+* Inventory updates immediately.
+* No internet connection required.
+
+---
+
+## Module 2: Inventory Management
+
+### Description
+
+Tracks inventory levels locally.
+
+### Requirements
+
+* Store inventory locally.
+* Display current stock quantities.
+* Update quantities after each sale.
+* Synchronize data when internet becomes available.
+
+### Acceptance Criteria
+
+* Inventory remains available offline.
+* Inventory persists after browser refresh.
+* Data synchronizes successfully when online.
+
+---
+
+## Module 3: Inventory Risk Intelligence
+
+### Description
+
+Identifies inventory risks before they impact operations.
+
+### Stockout Risk Detection
+
+Requirements:
+
+* Calculate average medicine consumption.
+* Estimate days remaining.
+* Generate low-stock alerts.
+
+Acceptance Criteria:
+
+* System displays projected stockout dates.
+* Alert appears before inventory reaches zero.
+
+Example:
+
+> Coartem projected to run out in 4 days.
+
+---
+
+### Expiry Risk Detection
+
+Requirements:
+
+* Store expiry dates.
+* Monitor expiry timelines.
+* Identify medicines approaching expiration.
+* Display risk notifications.
+
+Acceptance Criteria:
+
+* Expiring medicines appear in alerts.
+* User can view days until expiry.
+
+Example:
+
+> 15 packs of Amoxicillin may expire within 30 days.
+
+---
+
+## Module 4: Automated Restock Assistant
+
+### Description
+
+Generates reorder requests when inventory reaches critical levels.
+
+### Requirements
+
+* Detect low-stock thresholds.
+* Recommend reorder quantities.
+* Generate WhatsApp-compatible order message.
+
+### Acceptance Criteria
+
+* User can generate reorder request with one click.
+* WhatsApp opens with pre-filled message.
+
+---
+
+## Module 5: Pharmacy Insights Dashboard
+
+### Description
+
+Provides a summary of inventory health.
+
+### Requirements
+
+Display:
+
+* Total medicines
+* Low-stock medicines
+* Expiry-risk medicines
+* Fast-moving medicines
+* Slow-moving medicines
+
+### Acceptance Criteria
+
+* Dashboard loads in under 3 seconds.
+* Metrics update automatically after sales.
+
+---
+
+# 8. Non-Functional Requirements
+
+## Performance
+
+* Dashboard loads within 3 seconds.
+* Sales logging completed within 1 second.
+* Inventory updates instantly.
+
+## Reliability
+
+* Application functions without internet.
+* Data remains available after browser refresh.
+* Synchronization occurs when connectivity returns.
+
+## Usability
+
+* Mobile-first design.
+* Large touch targets.
+* Minimal training required.
+
+## Security
+
+* Basic authentication for demo.
+* Secure API endpoints.
+* Encrypted database connections.
+
+---
+
+# 9. Technical Architecture
+
+## Frontend
+
+* Next.js 15
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+
+## State Management
+
+* Zustand
+
+## Offline Layer
+
+* IndexedDB
+* Dexie.js
+* Service Workers
+* Workbox
+
+## Backend
+
+* Next.js API Routes
+* Server Actions
+
+## Database
+
+* PostgreSQL (Neon)
+
+## Deployment
+
+* Vercel
+
+---
+
+# 10. MVP Success Metrics
+
+The MVP is considered successful if:
+
+### Product Metrics
+
+* Sales can be logged offline.
+* Inventory updates correctly.
+* Stockout alerts are generated.
+* Expiry alerts are generated.
+* Reorder requests can be created.
+
+### Demo Metrics
+
+* Entire workflow demonstrated in under 2 minutes.
+* No critical bugs during demo.
+* Complete pharmacy journey successfully shown.
+
+---
+
+# 11. Demo Scenario
+
+## Step 1
+
+Pharmacist opens SmartShelf dashboard.
+
+## Step 2
+
+Pharmacist taps:
+
+* Coartem
+* Coartem
+* Amoxicillin
+
+Inventory updates instantly.
+
+## Step 3
+
+SmartShelf identifies:
+
+> ⚠️ Coartem projected to run out in 4 days.
+
+## Step 4
+
+SmartShelf identifies:
+
+> ⚠️ Amoxicillin may expire within 30 days.
+
+## Step 5
+
+Pharmacist clicks:
+
+"Generate Reorder"
+
+## Step 6
+
+WhatsApp opens with a pre-filled supplier order.
+
+## Step 7
+
+Dashboard updates inventory health status.
+
+---
+
+# 12. Out of Scope (Hackathon)
+
+The following features will NOT be built during the hackathon:
+
+* Supplier marketplace
+* Payments
+* Pharmacy financing
+* Multi-branch management
+* Patient records
+* Prescription management
+* Barcode scanning
+* National analytics dashboard
+* Advanced machine learning models
+
+These features belong to future product phases.
+
+---
+
+# 13. Future Roadmap
+
+## Phase 2
+
+* Supplier marketplace
+* Price comparison
+* Multi-supplier procurement
+
+## Phase 3
+
+* Regional shortage monitoring
+* Demand forecasting
+* Inventory benchmarking
+
+## Phase 4
+
+* Inventory financing
+* Pharmacy credit scoring
+
+## Phase 5
+
+* National medicine availability network
+* Public health intelligence dashboards

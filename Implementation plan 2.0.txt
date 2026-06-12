@@ -1,0 +1,751 @@
+SmartShelf — Engineering Implementation Plan
+Hackathon MVP v1.0
+Stack: Next.js 15 · TypeScript · Tailwind CSS · shadcn/ui · Zustand · Dexie.js · PostgreSQL (Neon) · Vercel
+
+Audience: Senior Engineer
+
+Approach: Offline-first, mobile-first, phased delivery
+
+Pre-Flight Checklist (Before Writing Any Code)
+Before starting Phase 1, confirm these decisions are locked:
+
+[ ] Neon PostgreSQL project created — connection string available
+
+[ ] Vercel project created and linked to repo
+
+[ ] Node.js ≥ 20 installed locally
+
+[ ] Seed medicine list agreed (name, unit, opening stock qty, reorder threshold, expiry date, cost per unit)
+
+[ ] WhatsApp supplier number confirmed for deep link testing
+
+[ ] Demo scenario confirmed (matches PRD §11)
+
+Phase 0 — Project Scaffold & Tooling
+Goal: A runnable Next.js 15 repo with all dependencies installed, environment variables wired, and folder structure established. Nothing works yet — but nothing is missing either.
+
+0.1 Initialise the repo
+
+npx create-next-app@latest smartshelf \
+  --typescript \
+  --tailwind \
+  --eslint \
+  --app \
+  --src-dir \
+  --import-alias "@/*"
+cd smartshelf
+
+0.2 Install all dependencies up front
+# UI
+npx shadcn@latest init
+npx shadcn@latest add button card badge alert dialog sheet toast
+
+# State
+npm install zustand
+
+# Offline / IndexedDB
+npm install dexie dexie-react-hooks
+
+# PWA (Service Worker generation)
+npm install next-pwa
+
+# DB ORM
+npm install drizzle-orm @neondatabase/serverless
+npm install -D drizzle-kit
+
+# Validation
+npm install zod
+
+# Date utilities
+npm install date-fns
+
+# Dev tools
+npm install -D @types/node prettier eslint-config-prettier
+
+0.3 Environment variables
+Create .env.local:
+
+# Database
+DATABASE_URL=postgres://...neon.tech/smartshelf?sslmode=require
+
+# App
+NEXT_PUBLIC_APP_NAME=SmartShelf
+NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER=+23276000000  # replace with real number
+
+Create .env.example (committed to repo, no secrets):
+DATABASE_URL=
+NEXT_PUBLIC_APP_NAME=SmartShelf
+NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER=
+
+0.4 Folder structure
+src/
+├── app/
+│   ├── layout.tsx            # Root layout, PWA meta tags
+│   ├── page.tsx              # Dashboard (/)
+│   ├── risks/
+│   │   └── page.tsx          # Inventory Risks (formerly alerts)
+│   ├── restock/
+│   │   └── page.tsx          # Restock assistant
+│   └── api/
+│       ├── medicines/
+│       │   └── route.ts
+│       ├── sales/
+│       │   └── route.ts
+│       └── sync/
+│           └── route.ts
+├── components/
+│   ├── ui/                   # shadcn auto-generated
+│   ├── medicine-tile.tsx
+│   ├── stock-badge.tsx
+│   ├── risk-card.tsx         # Formerly alert-card
+│   ├── dashboard-metrics.tsx
+│   ├── restock-list.tsx
+│   └── nav-bar.tsx
+├── db/
+│   ├── schema.ts             # Drizzle schema
+│   ├── client.ts             # Neon connection
+│   └── queries.ts            # All DB query functions
+├── lib/
+│   ├── idb.ts                # Dexie database definition
+│   ├── sync.ts               # Online sync logic
+│   ├── risk-engine.ts        # Stockout + expiry calculations (Sales history & loss)
+│   ├── restock.ts            # Reorder quantity logic
+│   └── whatsapp.ts           # WhatsApp deep link builder
+├── store/
+│   └── pharmacy.ts           # Zustand store
+├── types/
+│   └── index.ts              # Shared TypeScript types
+└── hooks/
+    ├── use-online.ts         # Network status hook
+    └── use-sync.ts           # Sync trigger hook
+
+0.5 PWA configuration
+In next.config.ts:
+
+import withPWA from 'next-pwa';
+
+const nextConfig = withPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+})({
+  // your next config here
+});
+
+export default nextConfig;
+
+Create public/manifest.json:
+
+{
+  "name": "SmartShelf",
+  "short_name": "SmartShelf",
+  "description": "Pharmacy inventory operating system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+
+0.6 Shared TypeScript types
+src/types/index.ts:
+
+export type StockStatus = 'ok' | 'low' | 'critical' | 'out';
+export type ExpiryStatus = 'ok' | 'expiring_soon' | 'expired';
+
+export interface Medicine {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: number;
+  reorderThreshold: number;
+  reorderQuantity: number;
+  expiryDate: string;     
+  costPerUnit: number;    // used for loss calculations
+  isBig5: boolean;        // flag for Quick Access dashboard
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Sale {
+  id: string;             
+  medicineId: string;
+  quantity: number;
+  soldAt: string;         // needed for rolling average calc
+  synced: boolean;        
+}
+
+export interface StockAlert {
+  medicineId: string;
+  medicineName: string;
+  type: 'stockout' | 'expiry';
+  severity: 'warning' | 'critical';
+  daysRemaining: number;
+  currentStock: number;
+  estimatedLossLeones?: number; // Calculated field for expiry
+}
+
+export interface RestockItem {
+  medicineId: string;
+  medicineName: string;
+  currentStock: number;
+  reorderQuantity: number;
+  unit: string;
+}
+
+
+export type StockStatus = 'ok' | 'low' | 'critical' | 'out';
+export type ExpiryStatus = 'ok' | 'expiring_soon' | 'expired';
+
+export interface Medicine {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: number;
+  reorderThreshold: number;
+  reorderQuantity: number;
+  expiryDate: string;     
+  costPerUnit: number;    // used for loss calculations
+  isBig5: boolean;        // flag for Quick Access dashboard
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Sale {
+  id: string;             
+  medicineId: string;
+  quantity: number;
+  soldAt: string;         // needed for rolling average calc
+  synced: boolean;        
+}
+
+export interface StockAlert {
+  medicineId: string;
+  medicineName: string;
+  type: 'stockout' | 'expiry';
+  severity: 'warning' | 'critical';
+  daysRemaining: number;
+  currentStock: number;
+  estimatedLossLeones?: number; // Calculated field for expiry
+}
+
+export interface RestockItem {
+  medicineId: string;
+  medicineName: string;
+  currentStock: number;
+  reorderQuantity: number;
+  unit: string;
+}
+
+Phase 1 — Database Layer (PostgreSQL + Drizzle)
+1.1 Define Drizzle schema
+src/db/schema.ts:
+
+import { pgTable, uuid, text, integer, timestamp, boolean, numeric } from 'drizzle-orm/pg-core';
+
+export const medicines = pgTable('medicines', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  unit: text('unit').notNull().default('units'),
+  currentStock: integer('current_stock').notNull().default(0),
+  reorderThreshold: integer('reorder_threshold').notNull().default(10),
+  reorderQuantity: integer('reorder_quantity').notNull().default(50),
+  expiryDate: text('expiry_date').notNull(),
+  costPerUnit: numeric('cost_per_unit', { precision: 10, scale: 2 }).notNull(),
+  isBig5: boolean('is_big_5').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const sales = pgTable('sales', {
+  id: uuid('id').primaryKey(),
+  medicineId: uuid('medicine_id').notNull().references(() => medicines.id),
+  quantity: integer('quantity').notNull().default(1),
+  soldAt: timestamp('sold_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+1.2 Drizzle config
+drizzle.config.ts:
+
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/db/schema.ts',
+  out: './drizzle',
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});
+
+1.3 DB client
+src/db/client.ts:
+
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import * as schema from './schema';
+
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle(sql, { schema });
+
+1.4 Seed data
+src/db/seed.ts:
+
+
+import { db } from './client';
+import { medicines } from './schema';
+
+const seedMedicines = [
+  // The "Big 5"
+  { name: 'Coartem', unit: 'packs', currentStock: 8, reorderThreshold: 10, reorderQuantity: 50, expiryDate: '2025-12-01', costPerUnit: '50.00', isBig5: true },
+  { name: 'Paracetamol 500mg', unit: 'strips', currentStock: 40, reorderThreshold: 30, reorderQuantity: 200, expiryDate: '2026-03-01', costPerUnit: '10.00', isBig5: true },
+  { name: 'Amoxicillin 500mg', unit: 'packs', currentStock: 15, reorderThreshold: 20, reorderQuantity: 100, expiryDate: '2025-07-15', costPerUnit: '30.00', isBig5: true },
+  { name: 'Metronidazole', unit: 'packs', currentStock: 12, reorderThreshold: 15, reorderQuantity: 60, expiryDate: '2025-09-01', costPerUnit: '25.00', isBig5: true },
+  { name: 'ORS Sachets', unit: 'sachets', currentStock: 25, reorderThreshold: 20, reorderQuantity: 100, expiryDate: '2026-01-01', costPerUnit: '5.00', isBig5: true },
+  // Other meds
+  { name: 'Ibuprofen 400mg', unit: 'packs', currentStock: 30, reorderThreshold: 15, reorderQuantity: 50, expiryDate: '2026-05-01', costPerUnit: '15.00', isBig5: false }
+];
+
+async function seed() {
+  await db.insert(medicines).values(seedMedicines).onConflictDoNothing();
+  console.log('Seeded', seedMedicines.length, 'medicines');
+}
+
+seed().catch(console.error);
+
+Phase 2 — Offline Layer (Dexie / IndexedDB)
+2.1 Define the Dexie database
+src/lib/idb.ts:
+
+import Dexie, { type Table } from 'dexie';
+import type { Medicine, Sale } from '@/types';
+
+export class SmartShelfDB extends Dexie {
+  medicines!: Table<Medicine>;
+  sales!: Table<Sale>;
+  pendingSales!: Table<Sale>;
+
+  constructor() {
+    super('SmartShelfDB');
+    this.version(1).stores({
+      medicines: 'id, name, currentStock, expiryDate, isBig5',
+      sales: 'id, medicineId, soldAt, synced',
+      pendingSales: 'id, medicineId, soldAt',
+    });
+  }
+}
+
+export const idb = new SmartShelfDB();
+
+2.2 Bootstrap: populate IndexedDB from server on first load
+src/lib/sync.ts:
+(Added fetching sales history for the 7-day average engine)
+
+import { idb } from './idb';
+import type { Medicine, Sale } from '@/types';
+
+export async function bootstrapFromServer(): Promise<void> {
+  const count = await idb.medicines.count();
+  if (count > 0) return;
+
+  const [medRes, salesRes] = await Promise.all([
+    fetch('/api/medicines'),
+    fetch('/api/sales') // Seed recent sales history for accurate calculations
+  ]);
+
+  if (medRes.ok) {
+    const medicines: Medicine[] = await medRes.json();
+    await idb.medicines.bulkPut(medicines);
+  }
+  
+  if (salesRes.ok) {
+    const sales: Sale[] = await salesRes.json();
+    await idb.sales.bulkPut(sales);
+  }
+}
+
+export async function syncPendingSales(): Promise<void> {
+  const pending = await idb.pendingSales.toArray();
+  if (pending.length === 0) return;
+
+  const res = await fetch('/api/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sales: pending }),
+  });
+
+  if (!res.ok) return;
+
+  const synced = pending.map(s => ({ ...s, synced: true }));
+  await idb.transaction('rw', idb.sales, idb.pendingSales, async () => {
+    await idb.sales.bulkPut(synced);
+    await idb.pendingSales.bulkDelete(pending.map(s => s.id));
+  });
+}
+
+
+Phase 3 — Zustand Store & State
+src/store/pharmacy.ts:
+
+import { create } from 'zustand';
+import { idb } from '@/lib/idb';
+import type { Medicine, Sale, StockAlert } from '@/types';
+import { computeAlerts, computeHealthScore } from '@/lib/risk-engine';
+import { v4 as uuidv4 } from 'uuid';
+
+interface PharmacyStore {
+  medicines: Medicine[];
+  sales: Sale[];
+  alerts: StockAlert[];
+  healthScore: number;
+  isLoaded: boolean;
+
+  loadData: () => Promise<void>;
+  recordSale: (medicineId: string, quantity?: number) => Promise<void>;
+}
+
+export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
+  medicines: [],
+  sales: [],
+  alerts: [],
+  healthScore: 100,
+  isLoaded: false,
+
+  loadData: async () => {
+    const medicines = await idb.medicines.toArray();
+    const sales = await idb.sales.toArray();
+    const pendingSales = await idb.pendingSales.toArray();
+    
+    const allSales = [...sales, ...pendingSales];
+    const alerts = computeAlerts(medicines, allSales);
+    const healthScore = computeHealthScore(alerts);
+
+    set({ medicines, sales: allSales, alerts, healthScore, isLoaded: true });
+  },
+
+  recordSale: async (medicineId, quantity = 1) => {
+    const sale: Sale = {
+      id: uuidv4(),
+      medicineId,
+      quantity,
+      soldAt: new Date().toISOString(),
+      synced: false,
+    };
+
+    await idb.pendingSales.put(sale);
+
+    const medicine = await idb.medicines.get(medicineId);
+    if (!medicine) return;
+
+    const updated = {
+      ...medicine,
+      currentStock: Math.max(0, medicine.currentStock - quantity),
+      updatedAt: new Date().toISOString(),
+    };
+    await idb.medicines.put(updated);
+
+    await get().loadData();
+  },
+}));
+
+Phase 4 — Risk Engine (Data-Driven)
+Goal: Calculate true days remaining based on a 7-day rolling average, compute potential financial loss for expiries, and generate the Inventory Health Score.
+
+src/lib/risk-engine.ts:
+
+import { differenceInDays, subDays } from 'date-fns';
+import type { Medicine, Sale, StockAlert } from '@/types';
+
+const EXPIRY_WARNING_DAYS = 30;
+const LOW_STOCK_MULTIPLIER = 2; 
+
+export function computeAlerts(medicines: Medicine[], sales: Sale[]): StockAlert[] {
+  const alerts: StockAlert[] = [];
+  const today = new Date();
+  const sevenDaysAgo = subDays(today, 7);
+
+  for (const med of medicines) {
+    // --- Expiry Alert & Potential Loss ---
+    const daysToExpiry = differenceInDays(new Date(med.expiryDate), today);
+    if (daysToExpiry <= EXPIRY_WARNING_DAYS && daysToExpiry > 0 && med.currentStock > 0) {
+      alerts.push({
+        medicineId: med.id,
+        medicineName: med.name,
+        type: 'expiry',
+        severity: daysToExpiry <= 7 ? 'critical' : 'warning',
+        daysRemaining: daysToExpiry,
+        currentStock: med.currentStock,
+        estimatedLossLeones: med.currentStock * Number(med.costPerUnit),
+      });
+    }
+
+    // --- Stockout Alert (7-Day Rolling Average) ---
+    if (med.currentStock <= med.reorderThreshold) {
+      // Calculate average daily sales in the last 7 days
+      const recentSales = sales.filter(s => 
+        s.medicineId === med.id && new Date(s.soldAt) >= sevenDaysAgo
+      );
+      const totalSoldLast7Days = recentSales.reduce((sum, sale) => sum + sale.quantity, 0);
+      
+      // If no sales history, default to 0.5 units/day to avoid infinity/division errors
+      const avgDailySales = Math.max(totalSoldLast7Days / 7, 0.5); 
+      const daysRemaining = Math.floor(med.currentStock / avgDailySales);
+
+      alerts.push({
+        medicineId: med.id,
+        medicineName: med.name,
+        type: 'stockout',
+        severity: med.currentStock === 0 || daysRemaining <= 3 ? 'critical' : 'warning',
+        daysRemaining: daysRemaining,
+        currentStock: med.currentStock,
+      });
+    }
+  }
+
+  return alerts.sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1;
+    return a.daysRemaining - b.daysRemaining;
+  });
+}
+
+export function computeHealthScore(alerts: StockAlert[]): number {
+  let score = 100;
+  for (const alert of alerts) {
+    if (alert.severity === 'critical') score -= 15;
+    else if (alert.severity === 'warning') score -= 5;
+  }
+  return Math.max(0, score);
+}
+
+export function getStockStatus(stock: number, threshold: number): 'ok' | 'low' | 'critical' | 'out' {
+  if (stock === 0) return 'out';
+  if (stock <= threshold) return 'critical';
+  if (stock <= threshold * LOW_STOCK_MULTIPLIER) return 'low';
+  return 'ok';
+}
+
+Phase 5 — API Routes
+Add the missing GET /api/sales to bootstrap data, alongside /api/medicines and /api/sync. (Implementation of standard Next.js GET/POST Drizzle routes omitted for brevity but they query the DB as normal).
+
+Phase 6 — UI Components
+6.1 DashboardMetrics (with Health Score)
+src/components/dashboard-metrics.tsx:
+
+import { Card, CardContent } from '@/components/ui/card';
+import type { Medicine, StockAlert } from '@/types';
+
+interface Props {
+  healthScore: number;
+  medicines: Medicine[];
+  alerts: StockAlert[];
+}
+
+export function DashboardMetrics({ healthScore, medicines, alerts }: Props) {
+  const lowStock = alerts.filter(a => a.type === 'stockout').length;
+  const expiryRisk = alerts.filter(a => a.type === 'expiry').length;
+
+  return (
+    <div className="grid grid-cols-3 gap-3 mb-6">
+      <Card className="bg-slate-50 border-slate-200">
+        <CardContent className="p-3 text-center flex flex-col justify-center h-full">
+          <p className={`text-3xl font-bold ${healthScore > 80 ? 'text-green-600' : healthScore > 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+            {healthScore}
+          </p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Health Score</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="p-3 text-center">
+          <p className={`text-2xl font-bold ${lowStock > 0 ? 'text-amber-600' : 'text-green-600'}`}>{lowStock}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Low Stock</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-3 text-center">
+          <p className={`text-2xl font-bold ${expiryRisk > 0 ? 'text-red-600' : 'text-green-600'}`}>{expiryRisk}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Expiry Risk</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+6.2 RiskCard (Formerly AlertCard, now with Loss display)
+src/components/risk-card.tsx:
+
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle, Clock } from 'lucide-react';
+import type { StockAlert } from '@/types';
+
+export function RiskCard({ alert }: { alert: StockAlert }) {
+  const isExpiry = alert.type === 'expiry';
+  const isCritical = alert.severity === 'critical';
+
+  return (
+    <Alert variant={isCritical ? 'destructive' : 'default'} className="mb-3">
+      {isExpiry ? <Clock className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+      <AlertTitle className="font-semibold">
+        {isExpiry ? `${alert.medicineName} expiring soon` : `${alert.medicineName} running low`}
+      </AlertTitle>
+      <AlertDescription>
+        {isExpiry ? (
+          <>
+            {alert.currentStock} packs may expire in {alert.daysRemaining} days.
+            <span className="block mt-1 font-semibold">Potential Loss: Le {alert.estimatedLossLeones?.toLocaleString()}</span>
+          </>
+        ) : (
+          alert.currentStock === 0 
+            ? `Out of stock.` 
+            : `Projected to run out in ${alert.daysRemaining} days based on actual sales data. ${alert.currentStock} remaining.`
+        )}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+Phase 7 — Page Assembly
+7.1 Dashboard page (/) with Demo Banner & "Big 5"
+src/app/page.tsx:
+
+'use client';
+import { useEffect } from 'react';
+import { usePharmacyStore } from '@/store/pharmacy';
+import { MedicineTile } from '@/components/medicine-tile';
+import { DashboardMetrics } from '@/components/dashboard-metrics';
+import { RiskCard } from '@/components/risk-card';
+import { bootstrapFromServer } from '@/lib/sync';
+
+export default function DashboardPage() {
+  const { healthScore, medicines, alerts, isLoaded, loadData } = usePharmacyStore();
+
+  useEffect(() => {
+    bootstrapFromServer().then(() => loadData());
+  }, [loadData]);
+
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center h-40 text-muted-foreground">Loading...</div>;
+  }
+
+  const big5Meds = medicines.filter(m => m.isBig5);
+  const totalRisks = alerts.length;
+  const stockoutRisks = alerts.filter(a => a.type === 'stockout').length;
+  const expiryRisks = alerts.filter(a => a.type === 'expiry').length;
+
+  return (
+    <div>
+      {/* DEMO BANNER */}
+      {totalRisks > 0 && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 p-3 mb-4 rounded-r-md shadow-sm">
+          <p className="text-sm font-bold text-amber-900">⚠️ {totalRisks} Medicines at Risk</p>
+          <p className="text-xs text-amber-800">
+            {stockoutRisks} stockout risk • {expiryRisks} expiry risk
+          </p>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">SmartShelf</h1>
+      </div>
+
+      <DashboardMetrics healthScore={healthScore} medicines={medicines} alerts={alerts} />
+
+      <section>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center justify-between">
+          <span>Quick Access (Top Sellers)</span>
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded">1-Tap Log</span>
+        </h2>
+        <div className="grid grid-cols-2 gap-3">
+          {big5Meds.map(med => (
+            <MedicineTile key={med.id} medicine={med} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+7.2 Inventory Risks page (/risks)
+src/app/risks/page.tsx:
+'use client';
+import { usePharmacyStore } from '@/store/pharmacy';
+import { RiskCard } from '@/components/risk-card';
+
+export default function RisksPage() {
+  const alerts = usePharmacyStore(s => s.alerts);
+
+  return (
+    <div>
+      <h1 className="text-xl font-bold mb-4">Inventory Risks</h1>
+      {alerts.length === 0 ? (
+        <p className="text-muted-foreground text-center py-12">No risks detected. Inventory looks healthy.</p>
+      ) : (
+        alerts.map(a => <RiskCard key={`${a.medicineId}-${a.type}`} alert={a} />)
+      )}
+    </div>
+  );
+}
+
+
+
+Phase 8 — Sync Wiring
+src/hooks/use-sync.ts:
+import { useEffect } from 'react';
+import { useOnline } from './use-online';
+import { syncPendingSales } from '@/lib/sync';
+import { usePharmacyStore } from '@/store/pharmacy';
+
+export function useSync() {
+  const online = useOnline();
+  const loadData = usePharmacyStore(s => s.loadData);
+
+  useEffect(() => {
+    if (!online) return;
+    syncPendingSales().then(() => loadData());
+  }, [online, loadData]);
+}
+
+Phase 9 — Navigation
+src/components/nav-bar.tsx:
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, ShieldAlert, RefreshCw } from 'lucide-react';
+
+const nav = [
+  { href: '/',         label: 'Dashboard', Icon: LayoutDashboard },
+  { href: '/risks',    label: 'Risks',     Icon: ShieldAlert      },
+  { href: '/restock',  label: 'Restock',   Icon: RefreshCw        },
+];
+
+export function NavBar() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
+      <div className="max-w-2xl mx-auto flex">
+        {nav.map(({ href, label, Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`flex-1 flex flex-col items-center py-3 text-xs transition-colors
+              ${pathname === href ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}
+          >
+            <Icon className="h-5 w-5 mb-1" />
+            {label}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+
+

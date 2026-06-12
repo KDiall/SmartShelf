@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  name      String?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  medicines Medicine[]
+  sales     Sale[]
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Medicine {
+  id               String   @id @default(uuid())
+  name             String
+  unit             String   @default("units")
+  currentStock     Int      @default(0)
+  reorderThreshold Int      @default(10)
+  reorderQuantity  Int      @default(50)
+  expiryDate       String
+  costPerUnit      Float
+  isBig5           Boolean  @default(false)
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  sales            Sale[]
+}
+
+model Sale {
+  id         String   @id
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+  quantity   Int      @default(1)
+  soldAt     DateTime
+  synced     Boolean  @default(true)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}

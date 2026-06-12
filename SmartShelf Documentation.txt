@@ -1,0 +1,298 @@
+# SmartShelf
+
+## The Operating System for Community Pharmarmacies
+
+### One-Line Pitch
+
+SmartShelf is an offline-first pharmacy operating system that helps community pharmacies prevent medicine stockouts, reduce expiry losses, and automate restocking in low-connectivity environments.
+
+---
+
+# 1. The Problem
+
+Across Sierra Leone, many community pharmacies still manage inventory manually using notebooks, memory, or spreadsheets. During busy periods, pharmacists prioritize serving customers and often do not have time to update inventory records.
+
+As a result:
+
+* Pharmacies only discover medicine shortages after stock has already run out.
+* Patients experience treatment delays when essential medicines are unavailable.
+* Pharmacy owners lose revenue due to missed sales opportunities.
+* Medicines expire on shelves because slow-moving inventory is difficult to track.
+* Restocking decisions are reactive and rely on manual checks, phone calls, and guesswork.
+
+Existing pharmacy management systems are often expensive, overly complex, and dependent on stable internet connectivity, making them impractical for many local pharmacies.
+
+---
+
+# 2. The Solution
+
+SmartShelf is an offline-first pharmacy operating system designed specifically for low-connectivity African markets.
+
+The platform enables pharmacists to record medicine sales with a single tap, automatically track inventory levels, identify inventory risks before they become costly problems, and generate restock requests through familiar communication channels such as WhatsApp.
+
+Instead of waiting until shelves become empty or products expire, SmartShelf continuously analyzes inventory activity and provides proactive recommendations that help pharmacies maintain medicine availability while reducing operational losses.
+
+---
+
+# 3. Hackathon MVP Scope
+
+## A. One-Tap Sales Logging
+
+A mobile-first interface designed for high-traffic pharmacy environments.
+
+### Features
+
+* One-tap medicine sales recording
+* Large touch-friendly medicine tiles
+* Optimized for phones and tablets
+* Minimal training required
+* Fully functional offline
+
+### Example
+
+Pharmacist taps:
+
+* Coartem
+* Amoxicillin
+* Paracetamol
+
+Inventory updates instantly.
+
+---
+
+## B. Offline Inventory Management
+
+SmartShelf operates even without internet access.
+
+### Features
+
+* Real-time stock deduction
+* Offline transaction storage
+* Local-first architecture
+* Automatic synchronization when connectivity returns
+
+This ensures pharmacies can continue operating regardless of network conditions.
+
+---
+
+## C. Inventory Risk Intelligence
+
+SmartShelf continuously monitors inventory and identifies risks before they impact operations.
+
+### Stockout Risk Detection
+
+The system analyzes inventory movement and estimates when a medicine is likely to run out.
+
+#### Example
+
+> ⚠️ Coartem is projected to run out in 4 days.
+
+### Expiry Risk Detection
+
+The system identifies medicines that are unlikely to be sold before their expiration date.
+
+#### Example
+
+> ⚠️ 15 packs of Amoxicillin may expire within 30 days.
+
+### Features
+
+* Consumption trend analysis
+* Remaining stock calculations
+* Projected stockout estimation
+* Expiry date monitoring
+* Slow-moving inventory detection
+* Potential loss estimation
+* Early warning notifications
+
+---
+
+## D. Automated Restock Assistant
+
+When inventory reaches critical levels, SmartShelf generates supplier-ready reorder requests.
+
+### Features
+
+* Low-stock threshold monitoring
+* Suggested reorder quantities
+* WhatsApp order generation
+* Supplier-ready purchase requests
+
+### Example
+
+**Reorder Request**
+
+* Coartem × 50
+* Paracetamol × 100
+* Metronidazole × 30
+
+The request can be sent directly through WhatsApp.
+
+---
+
+## E. Pharmacy Insights Dashboard
+
+A lightweight operational dashboard that provides immediate visibility into inventory performance.
+
+### Features
+
+* Fast-moving medicines
+* Slow-moving medicines
+* Inventory risk alerts
+* Stockout forecasts
+* Expiry-risk forecasts
+* Inventory health overview
+
+---
+
+# 4. What Makes SmartShelf Different?
+
+Most inventory systems tell pharmacies what has already happened.
+
+SmartShelf helps pharmacies understand what will happen next.
+
+By combining:
+
+* Offline-first operations
+* Inventory risk intelligence
+* Expiry risk detection
+* Automated restocking workflows
+
+SmartShelf transforms pharmacy inventory management from reactive to proactive.
+
+---
+
+# 5. Target Users
+
+## Primary Users
+
+* Community pharmacies
+* Independent pharmacies
+* Hospital pharmacies
+* Small pharmacy chains
+
+## Future Users
+
+* Pharmaceutical distributors
+* NGOs running medicine programs
+* Healthcare regulators
+* Public health organizations
+
+---
+
+# 6. Impact
+
+## For Patients
+
+* Improved medicine availability
+* Reduced treatment delays
+* Better healthcare outcomes
+
+## For Pharmacies
+
+* Fewer stockouts
+* Reduced expiry losses
+* Increased revenue
+* Faster inventory management
+
+## For the Healthcare Ecosystem
+
+* Better medicine availability visibility
+* Improved supply chain efficiency
+* Reliable pharmacy inventory intelligence
+
+---
+
+# 7. Long-Term Vision
+
+SmartShelf begins as an inventory intelligence platform but evolves into a complete pharmacy operating system.
+
+## Phase 2 — Procurement Network
+
+* Supplier marketplace
+* Multi-supplier ordering
+* Price comparison
+
+## Phase 3 — Supply Chain Intelligence
+
+* Regional shortage monitoring
+* Demand forecasting
+* Inventory benchmarking
+
+## Phase 4 — Pharmacy Financing
+
+* Inventory financing
+* Working capital support
+* Credit scoring based on inventory movement
+
+## Phase 5 — National Medicine Intelligence Network
+
+* Real-time medicine availability tracking
+* Public health dashboards
+* National pharmaceutical supply chain insights
+
+---
+
+# 8. Technology Stack
+
+## Frontend
+
+* Next.js 15
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* Progressive Web App (PWA)
+
+## State Management
+
+* Zustand
+
+## Offline Layer
+
+* IndexedDB
+* Dexie.js
+* Service Workers
+* Workbox
+
+## Backend
+
+* Next.js Server Actions
+* Next.js API Routes
+
+## Database
+
+* PostgreSQL (Neon)
+
+## Forecasting & Analytics
+
+* TypeScript
+* Simple forecasting algorithms
+* Inventory trend analysis
+
+## Communications
+
+### Hackathon MVP
+
+* WhatsApp Deep Links
+
+### Production
+
+* WhatsApp Business API
+* SMS fallback support
+
+## Hosting
+
+* Vercel (Frontend + Backend)
+* Neon PostgreSQL
+
+---
+
+# Vision Statement
+
+SmartShelf is building the operating system for community pharmacies across Africa—starting with inventory intelligence, expanding into procurement, financing, and ultimately becoming the infrastructure layer that powers medicine availability across underserved markets.
+
+---
+
+# Elevator Pitch
+
+> SmartShelf helps community pharmacies prevent medicine stockouts, reduce expiry losses, and automate restocking through an offline-first operating system designed for low-connectivity environments.
