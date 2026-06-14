@@ -1,42 +1,41 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { z } from "zod";
 import { verifyToken } from "@/lib/jwt";
 
 const f = createUploadthing();
 
-async function assertAdmin(req: Request) {
-  const auth = req.headers.get("authorization");
-  if (!auth || !auth.startsWith("Bearer ")) {
-    throw new Error("Unauthorized: missing auth token");
+async function verifyAuth(input: { token: string }) {
+  const payload = await verifyToken(input.token);
+  if (!payload) {
+    throw new Error("Unauthorized: invalid token");
   }
-  const payload = await verifyToken(auth.slice(7));
-  if (!payload || payload.role !== "admin") {
+  return { userId: payload.userId, role: payload.role };
+}
+
+async function verifyAdmin(input: { token: string }) {
+  const result = await verifyAuth(input);
+  if (result.role !== "admin") {
     throw new Error("Forbidden: admin role required");
   }
-  return { userId: payload.userId };
+  return { userId: result.userId };
 }
 
 export const ourFileRouter = {
   stgUploader: f({ pdf: { maxFileSize: "16MB", maxFileCount: 10 } })
-    .middleware(async ({ req }) => {
-      return assertAdmin(req);
+    .input(z.object({ token: z.string() }))
+    .middleware(async ({ input }) => {
+      return verifyAdmin(input);
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      return { uploadedBy: metadata.userId, url: file.url };
+      return { uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url };
     }),
   medicineImageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
-    .middleware(async ({ req }) => {
-      const auth = req.headers.get("authorization");
-      if (!auth || !auth.startsWith("Bearer ")) {
-        throw new Error("Unauthorized: missing auth token");
-      }
-      const payload = await verifyToken(auth.slice(7));
-      if (!payload) {
-        throw new Error("Unauthorized: invalid token");
-      }
-      return { userId: payload.userId };
+    .input(z.object({ token: z.string() }))
+    .middleware(async ({ input }) => {
+      return verifyAuth(input);
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      return { url: file.url };
+      return { url: file.ufsUrl ?? file.url };
     }),
 } satisfies FileRouter;
 

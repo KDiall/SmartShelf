@@ -100,9 +100,7 @@ export default function GuidelinesPage() {
               <CardContent className="space-y-4">
                 <UploadDropzone
                   endpoint="stgUploader"
-                  headers={() => ({
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  })}
+                  input={{ token: token ?? '' }}
                   onUploadBegin={() => setUploading(true)}
                   onClientUploadComplete={(res) => {
                     setUploading(false);

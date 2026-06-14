@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,15 +75,12 @@ export function MedicineForm({
           <div className="flex-1">
             <UploadButton
               endpoint="medicineImageUploader"
-              headers={() => {
-                const t = localStorage.getItem('token');
-                return { ...(t ? { Authorization: `Bearer ${t}` } : {}) };
-              }}
+              input={{ token: localStorage.getItem('token') ?? '' }}
               onUploadBegin={() => setUploading(true)}
               onClientUploadComplete={(res) => {
                 setUploading(false);
                 if (res?.[0]) {
-                  setValue('image', res[0].url);
+                  setValue('image', res[0].ufsUrl ?? res[0].url);
                 }
               }}
               onUploadError={(error: Error) => {
