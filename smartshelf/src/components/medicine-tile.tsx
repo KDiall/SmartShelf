@@ -6,6 +6,7 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { CheckCircle2 } from 'lucide-react';
 
 interface Props {
   medicine: Medicine;

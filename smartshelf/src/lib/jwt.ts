@@ -1,6 +1,8 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret';
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'fallback-dev-secret'
+);
 
 export interface JwtPayload {
   userId: string;
@@ -8,13 +10,17 @@ export interface JwtPayload {
   role: string;
 }
 
-export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '90d' });
+export async function signToken(payload: JwtPayload): Promise<string> {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('90d')
+    .sign(JWT_SECRET);
 }
 
-export function verifyToken(token: string): JwtPayload | null {
+export async function verifyToken(token: string): Promise<JwtPayload | null> {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return payload as unknown as JwtPayload;
   } catch {
     return null;
   }

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePwa } from '@/hooks/use-pwa';
+import { useSync } from '@/hooks/use-sync';
 import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   usePwa();
+  useSync();
 
   const isAuthPage = pathname === '/login' || pathname === '/verify';
 
@@ -45,11 +47,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isAdmin = mounted && user?.role === 'admin';
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed left-0 top-0 h-full bg-primary text-primary-foreground z-50 transition-all duration-200',
+          'hidden lg:flex flex-col fixed left-0 top-0 h-full bg-primary text-white z-50 transition-all duration-200 shadow-xl',
           sidebarCollapsed ? 'w-16' : 'w-60'
         )}
       >
@@ -132,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <SheetClose key={href} render={<Link href={href} />} className={cn(
                           'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors',
                           active
-                            ? 'bg-white/20 text-white font-semibold'
+                            ? 'bg-white text-primary font-bold shadow-md'
                             : 'text-white/70 hover:text-white hover:bg-white/10'
                         )} style={{ fontSize: 18 }}>
                           <Icon className="h-5 w-5" />
@@ -176,7 +178,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="max-w-5xl mx-auto px-4 py-6">
           {children}
-          <div className="lg:hidden h-24" />
+          <div className="lg:hidden mobile-bottom-spacer" />
         </main>
       </div>
 

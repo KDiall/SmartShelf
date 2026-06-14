@@ -1,34 +1,43 @@
 import { idb } from './idb';
 import type { Medicine, Sale } from '@/types';
 
-export async function bootstrapFromServer(userId?: string): Promise<void> {
-  const count = await idb.medicines.count();
-  if (count > 0) return;
+function authHeaders(token?: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
+export async function bootstrapFromServer(userId?: string, authToken?: string): Promise<void> {
   const url = userId ? `/api/medicines?userId=${userId}` : '/api/medicines';
+  const headers = authHeaders(authToken);
   const [medRes, salesRes] = await Promise.all([
-    fetch(url),
-    fetch('/api/sales'),
+    fetch(url, { headers }),
+    fetch('/api/sales', { headers }),
   ]);
 
   if (medRes.ok) {
     const medicines: Medicine[] = await medRes.json();
-    await idb.medicines.bulkPut(medicines);
+    if (medicines.length > 0) {
+      await idb.medicines.bulkPut(medicines);
+    }
   }
 
   if (salesRes.ok) {
     const sales: Sale[] = await salesRes.json();
-    await idb.sales.bulkPut(sales);
+    if (sales.length > 0) {
+      await idb.sales.bulkPut(sales);
+    }
   }
 }
 
-export async function syncPendingSales(): Promise<void> {
+export async function syncPendingSales(authToken?: string): Promise<void> {
   const pending = await idb.pendingSales.toArray();
   if (pending.length === 0) return;
 
   const res = await fetch('/api/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(authToken),
     body: JSON.stringify({ sales: pending }),
   });
 
@@ -42,11 +51,12 @@ export async function syncPendingSales(): Promise<void> {
 }
 
 export async function syncMedicinesToServer(
-  medicines: Medicine[]
+  medicines: Medicine[],
+  authToken?: string
 ): Promise<void> {
   const res = await fetch('/api/medicines', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(authToken),
     body: JSON.stringify({ medicines }),
   });
 

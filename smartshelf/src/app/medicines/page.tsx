@@ -5,6 +5,7 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { getStockStatus } from '@/lib/risk-engine';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {

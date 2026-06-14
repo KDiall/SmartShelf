@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, CheckCircle2, AlertCircle, Loader2, FileUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileText, CheckCircle2, AlertCircle, Loader2, FileUp, Trash2 } from 'lucide-react';
 import { UploadDropzone } from '@/lib/uploadthing';
 
 export default function GuidelinesPage() {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!pathname.startsWith('/api/')) return NextResponse.next();
@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
   }
 
   const token = authHeader.slice(7);
-  const payload = verifyToken(token);
+  const payload = await verifyToken(token);
   if (!payload) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }

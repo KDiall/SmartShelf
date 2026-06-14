@@ -1,6 +1,6 @@
 import { verifyToken, type JwtPayload } from './jwt';
 
-export function getAuthUser(request: Request): JwtPayload | null {
+export async function getAuthUser(request: Request): Promise<JwtPayload | null> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
 

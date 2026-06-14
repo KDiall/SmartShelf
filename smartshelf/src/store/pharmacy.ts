@@ -2,7 +2,12 @@ import { create } from 'zustand';
 import { idb } from '@/lib/idb';
 import type { Medicine, Sale, StockAlert } from '@/types';
 import { computeAlerts, computeHealthScore } from '@/lib/risk-engine';
-import { syncPendingSales } from '@/lib/sync';
+import { syncMedicinesToServer } from '@/lib/sync';
+
+function getToken(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return localStorage.getItem('token') ?? undefined;
+}
 
 interface PharmacyStore {
   medicines: Medicine[];
@@ -62,16 +67,25 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
 
   addMedicine: async (medicine: Medicine) => {
     await idb.medicines.put(medicine);
+    await syncMedicinesToServer([medicine], getToken());
     await get().loadData();
   },
 
   updateMedicine: async (medicine: Medicine) => {
     await idb.medicines.put(medicine);
+    await syncMedicinesToServer([medicine], getToken());
     await get().loadData();
   },
 
   deleteMedicine: async (id: string) => {
     await idb.medicines.delete(id);
+    const token = getToken();
+    if (token) {
+      fetch(`/api/medicines/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
     await get().loadData();
   },
 }));
