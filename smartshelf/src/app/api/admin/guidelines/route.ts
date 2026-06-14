@@ -47,7 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, guideline });
   } catch (err) {
     console.error('Failed to process guideline:', err);
-    return NextResponse.json({ error: 'Failed to process document' }, { status: 500 });
+    const message =
+      err instanceof Error &&
+      (err.name === 'AbortError' ||
+        err.cause?.constructor?.name?.includes('Timeout') ||
+        (err.cause as any)?.code === 'UND_ERR_CONNECT_TIMEOUT')
+        ? 'AI ingestion service timed out. Please try again later.'
+        : 'Failed to process document';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

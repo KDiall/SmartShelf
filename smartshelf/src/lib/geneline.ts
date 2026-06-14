@@ -10,13 +10,27 @@ function messageAuthHeaders() {
   };
 }
 
-export async function genelineFetch(path: string, init: RequestInit = {}) {
+export async function genelineFetch(
+  path: string,
+  init: RequestInit = {},
+  timeoutMs = 30_000,
+) {
   const url = `${BASE_URL}${path}`;
   const headers = new Headers(init.headers);
   const a = messageAuthHeaders();
   headers.set("X-API-Key", a["X-API-Key"]);
   headers.set("Authorization", a["Authorization"]);
-  return fetch(url, { ...init, headers });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function enqueueIngestion(input: {

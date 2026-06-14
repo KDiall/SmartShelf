@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const text = `RESTOCK: ${lines.join(', ')}`;
     const result = await sendOrderMessage(supplierPhone, items);
     if (!result.sent) {
-      return NextResponse.json({ error: 'Failed to send SMS' }, { status: 500 });
+      return NextResponse.json({ error: result.error || 'Failed to send SMS' }, { status: 500 });
     }
     return NextResponse.json({ message: 'Order sent via SMS', items });
   }
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const result = await sendOrderMessage(supplierPhone, items);
 
   if (!result.sent) {
-    return NextResponse.json({ error: 'Failed to send order' }, { status: 500 });
+    return NextResponse.json({ error: result.error || 'Failed to send order' }, { status: 500 });
   }
 
   return NextResponse.json({ message: 'Order sent via WhatsApp', items });

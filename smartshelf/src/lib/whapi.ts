@@ -8,23 +8,43 @@ interface WhapiResponse {
 }
 
 async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiResponse> {
-  const res = await fetch(`${WHAPI_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${WHAPI_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('Whapi error:', err);
-    return { sent: false, error: err };
+  try {
+    const res = await fetch(`${WHAPI_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${WHAPI_API_KEY}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Whapi error:', err);
+      return { sent: false, error: err };
+    }
+
+    const data = await res.json();
+    return { sent: true, message: data.message };
+  } catch (err) {
+    const isTimeout =
+      err instanceof Error &&
+      (err.name === 'AbortError' ||
+        (err.cause as any)?.code === 'UND_ERR_CONNECT_TIMEOUT');
+
+    return {
+      sent: false,
+      error: isTimeout
+        ? 'WhatsApp service is temporarily unreachable. Please try again later or use SMS instead.'
+        : 'Failed to send WhatsApp message. Check your API configuration.',
+    };
+  } finally {
+    clearTimeout(timer);
   }
-
-  const data = await res.json();
-  return { sent: true, message: data.message };
 }
 
 export async function sendTextMessage(to: string, text: string): Promise<WhapiResponse> {

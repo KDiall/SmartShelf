@@ -5,9 +5,16 @@ const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
 
 const STATIC_URLS = [
   '/',
+  '/login',
+  '/verify',
   '/medicines',
-  '/risks',
+  '/stock',
+  '/orders',
   '/restock',
+  '/risks',
+  '/more',
+  '/admin/users',
+  '/admin/guidelines',
 ];
 
 self.addEventListener('install', (event) => {

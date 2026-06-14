@@ -1,4 +1,5 @@
 'use client';
+import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Medicine } from '@/types';
 import { UploadButton } from '@/lib/uploadthing';
-import { Image as ImageIcon, X, CheckCircle2 } from 'lucide-react';
+import { Image as ImageIcon, X, CheckCircle2, Loader2 } from 'lucide-react';
 
 const medicineSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -34,6 +35,8 @@ export function MedicineForm({
   onSubmit,
   submitLabel = 'Save',
 }: Props) {
+  const [uploading, setUploading] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -72,16 +75,42 @@ export function MedicineForm({
           <div className="flex-1">
             <UploadButton
               endpoint="medicineImageUploader"
+              headers={() => {
+                const t = localStorage.getItem('token');
+                return { ...(t ? { Authorization: `Bearer ${t}` } : {}) };
+              }}
+              onUploadBegin={() => setUploading(true)}
               onClientUploadComplete={(res) => {
+                setUploading(false);
                 if (res?.[0]) {
                   setValue('image', res[0].url);
                 }
               }}
               onUploadError={(error: Error) => {
+                setUploading(false);
                 alert(`Upload failed: ${error.message}`);
               }}
-              className="ut-button:bg-[#0284c7] ut-button:rounded-xl ut-button:h-10 ut-button:w-full ut-allowed-content:hidden"
+              appearance={{
+                button: {
+                  background: '#0284c7',
+                  borderRadius: '0.75rem',
+                  height: '2.5rem',
+                  width: '100%',
+                  color: '#fff',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                },
+                allowedContent: { display: 'none' },
+              }}
             />
+            {uploading && (
+              <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                <Loader2 className="h-4 w-4 animate-spin text-[#0284c7]" />
+                <span className="text-xs font-medium">Uploading image...</span>
+              </div>
+            )}
             {imageUrl && (
               <div className="mt-2 flex items-center gap-1.5 text-[#10b981]">
                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -181,6 +210,15 @@ export function MedicineForm({
           <p className="text-sm text-red-500 mt-1">{errors.expiryDate.message}</p>
         )}
       </div>
+
+      <label className="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          {...register('isBig5')}
+          className="h-5 w-5 rounded border-gray-300 text-[#0284c7] focus:ring-[#0284c7]"
+        />
+        <span className="text-sm font-medium">Mark as Quick-Sale item (Big 5)</span>
+      </label>
 
       <Button type="submit" disabled={isSubmitting} className="w-full h-11 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100">
         {isSubmitting ? 'Saving...' : submitLabel}

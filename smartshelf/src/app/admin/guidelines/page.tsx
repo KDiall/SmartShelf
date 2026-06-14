@@ -9,7 +9,8 @@ import { UploadDropzone } from '@/lib/uploadthing';
 
 export default function GuidelinesPage() {
   const token = useAuthStore((s) => s.token);
-  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [managedGuidelines, setManagedGuidelines] = useState<any[]>([]);
@@ -30,7 +31,7 @@ export default function GuidelinesPage() {
 
   async function ingestGuideline(url: string, filename: string) {
     if (!token) return;
-    setLoading(true);
+    setIngesting(true);
     setStatus('idle');
 
     try {
@@ -53,7 +54,7 @@ export default function GuidelinesPage() {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Something went wrong during ingestion');
     } finally {
-      setLoading(false);
+      setIngesting(false);
     }
   }
 
@@ -99,38 +100,58 @@ export default function GuidelinesPage() {
               <CardContent className="space-y-4">
                 <UploadDropzone
                   endpoint="stgUploader"
+                  headers={() => ({
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  })}
+                  onUploadBegin={() => setUploading(true)}
                   onClientUploadComplete={(res) => {
+                    setUploading(false);
                     if (res) {
                       res.forEach(file => {
-                        ingestGuideline(file.url, file.name);
+                        ingestGuideline(file.ufsUrl ?? file.url, file.name);
                       });
                     }
                   }}
                   onUploadError={(error: Error) => {
+                    setUploading(false);
                     setStatus('error');
                     setMessage(`Upload failed: ${error.message}`);
                   }}
-                  className="ut-label:text-primary ut-button:bg-[#0284c7] border-2 border-dashed border-sky-100 rounded-xl p-8 hover:border-sky-300 transition-colors"
+                  appearance={{
+                    label: { color: '#0284c7' },
+                    button: {
+                      background: '#0284c7',
+                      color: '#fff',
+                    },
+                  }}
+                  className="border-2 border-dashed border-sky-100 rounded-xl p-8 hover:border-sky-300 transition-colors"
                 />
 
-                {status === 'success' && (
+                {uploading && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <p className="text-sm font-medium">Uploading PDF to storage...</p>
+                  </div>
+                )}
+
+                {ingesting && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <p className="text-sm font-medium">AI is indexing your guidelines...</p>
+                  </div>
+                )}
+
+                {status === 'success' && !uploading && !ingesting && (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-[#10b981]/10 border border-[#10b981]/20 text-[#10b981]">
                     <CheckCircle2 className="h-5 w-5 shrink-0" />
                     <p className="text-sm font-medium">{message}</p>
                   </div>
                 )}
 
-                {status === 'error' && (
+                {status === 'error' && !uploading && !ingesting && (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-[#ef4444]/10 border border-[#ef4444]/20 text-[#ef4444]">
                     <AlertCircle className="h-5 w-5 shrink-0" />
                     <p className="text-sm font-medium">{message}</p>
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground p-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <p className="text-sm font-medium">AI is indexing your guidelines...</p>
                   </div>
                 )}
               </CardContent>

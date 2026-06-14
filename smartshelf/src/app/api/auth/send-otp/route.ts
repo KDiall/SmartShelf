@@ -35,6 +35,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     message: result.sent ? 'OTP sent successfully' : 'OTP generated (WhatsApp unavailable — check server logs)',
     whapiSent: result.sent,
-    _dev: { otp },
+    ...(process.env.NODE_ENV === 'development' ? { _dev: { otp } } : {}),
   });
 }

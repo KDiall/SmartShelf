@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
 
   if (!pathname.startsWith('/api/')) return NextResponse.next();
 
-  const publicApiRoutes = ['/api/auth/send-otp', '/api/auth/verify-otp'];
+  const publicApiRoutes = ['/api/auth/send-otp', '/api/auth/verify-otp', '/api/uploadthing'];
   if (publicApiRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
