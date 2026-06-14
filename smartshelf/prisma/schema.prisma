@@ -11,11 +11,25 @@ model User {
   id        String   @id @default(uuid())
   phone     String   @unique
   name      String?
+  role      String   @default("pharmacist")
   verified  Boolean  @default(false)
+  createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   medicines Medicine[]
   sales     Sale[]
+  guidelines Guideline[]
+}
+
+model Guideline {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  status    String   @default("indexed")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Otp {
@@ -30,6 +44,7 @@ model Otp {
 model Medicine {
   id               String   @id @default(uuid())
   name             String
+  image            String?
   unit             String   @default("units")
   currentStock     Int      @default(0)
   reorderThreshold Int      @default(10)

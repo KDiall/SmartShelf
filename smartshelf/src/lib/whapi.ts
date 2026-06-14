@@ -47,3 +47,13 @@ export async function sendOrderMessage(
   const text = `*SmartShelf Restock Order*\n\n${lines.join('\n')}\n\nPlease confirm availability.`;
   return sendTextMessage(supplierPhone, text);
 }
+
+export async function sendAccountCreatedMessage(
+  phone: string,
+  name: string | null,
+  otp: string
+): Promise<WhapiResponse> {
+  const greeting = name ? `Hi ${name},` : 'Hello,';
+  const text = `${greeting}\n\nYour SmartShelf account has been created! Use this OTP to log in:\n\n*${otp}*\n\nThis code expires in 5 minutes.\n\nDownload the app or visit the link to get started.`;
+  return sendTextMessage(phone, text);
+}

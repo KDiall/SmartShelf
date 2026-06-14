@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuthStore } from '@/store/auth';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthStore } from '@/store/auth';
 
 function VerifyForm() {
   const [code, setCode] = useState('');
@@ -16,12 +16,16 @@ function VerifyForm() {
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const phone = searchParams.get('phone') || '';
+  const devOtp = searchParams.get('otp') || '';
 
   useEffect(() => {
     if (!phone) {
       router.push('/login');
     }
-  }, [phone, router]);
+    if (devOtp) {
+      setCode(devOtp);
+    }
+  }, [phone, devOtp, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,42 +55,55 @@ function VerifyForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh]">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">Verify OTP</CardTitle>
-          <p className="text-sm text-muted-foreground text-center">
-            Enter the code sent to {phone}
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-14 w-14 mx-auto mb-3 rounded-2xl shadow-md" />
+          <h1 className="text-3xl font-bold text-primary" style={{ fontSize: 28 }}>
+            Verify OTP
+          </h1>
+          <p className="text-muted-foreground mt-1" style={{ fontSize: 18 }}>
+            Code sent to {phone}
           </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="code">6-Digit Code</Label>
-              <Input
-                id="code"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                placeholder="000000"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                className="text-center text-2xl tracking-widest"
-              />
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {loading ? 'Verifying...' : 'Verify'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="code">6-Digit Code</Label>
+                <Input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  required
+                  className="text-center text-2xl tracking-[0.5em]"
+                />
+              </div>
+
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full"
+                size="lg"
+              >
+                {loading ? 'Verifying...' : 'Verify'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -95,7 +112,7 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="min-h-screen flex items-center justify-center">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       }

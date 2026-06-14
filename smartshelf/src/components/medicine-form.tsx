@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Medicine } from '@/types';
+import { UploadButton } from '@/lib/uploadthing';
+import { Image as ImageIcon, X, CheckCircle2 } from 'lucide-react';
 
 const medicineSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  image: z.string().optional().nullable(),
   unit: z.string().min(1, 'Unit is required'),
   currentStock: z.coerce.number().min(0, 'Must be 0 or more'),
   reorderThreshold: z.coerce.number().min(1, 'Must be at least 1'),
@@ -34,11 +37,14 @@ export function MedicineForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<MedicineFormData>({
     resolver: zodResolver(medicineSchema),
     defaultValues: {
       name: defaultValues?.name || '',
+      image: defaultValues?.image || null,
       unit: defaultValues?.unit || 'packs',
       currentStock: defaultValues?.currentStock || 0,
       reorderThreshold: defaultValues?.reorderThreshold || 10,
@@ -49,92 +55,134 @@ export function MedicineForm({
     },
   });
 
+  const imageUrl = watch('image');
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="space-y-2">
+        <Label>Medicine Image</Label>
+        <div className="flex items-center gap-4">
+          <div className="h-20 w-20 rounded-2xl bg-secondary/50 border border-border flex items-center justify-center overflow-hidden shrink-0">
+            {imageUrl ? (
+              <img src={imageUrl} alt="Preview" className="h-full w-full object-cover" />
+            ) : (
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex-1">
+            <UploadButton
+              endpoint="medicineImageUploader"
+              onClientUploadComplete={(res) => {
+                if (res?.[0]) {
+                  setValue('image', res[0].url);
+                }
+              }}
+              onUploadError={(error: Error) => {
+                alert(`Upload failed: ${error.message}`);
+              }}
+              className="ut-button:bg-[#0284c7] ut-button:rounded-xl ut-button:h-10 ut-button:w-full ut-allowed-content:hidden"
+            />
+            {imageUrl && (
+              <div className="mt-2 flex items-center gap-1.5 text-[#10b981]">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Image Uploaded</span>
+              </div>
+            )}
+          </div>
+          {imageUrl && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setValue('image', null)}
+              className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+
       <div>
         <Label htmlFor="name">Medicine Name</Label>
-        <Input id="name" {...register('name')} />
+        <Input id="name" {...register('name')} placeholder="e.g. Paracetamol" className="rounded-xl" />
         {errors.name && (
-          <p className="text-sm text-red-500">{errors.name.message}</p>
+          <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="unit">Unit</Label>
-        <Input id="unit" {...register('unit')} />
+        <Label htmlFor="unit">Unit (e.g. packs, vials)</Label>
+        <Input id="unit" {...register('unit')} className="rounded-xl" />
         {errors.unit && (
-          <p className="text-sm text-red-500">{errors.unit.message}</p>
+          <p className="text-sm text-red-500 mt-1">{errors.unit.message}</p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
           <Label htmlFor="currentStock">Current Stock</Label>
           <Input
             id="currentStock"
             type="number"
             {...register('currentStock')}
+            className="rounded-xl"
           />
           {errors.currentStock && (
-            <p className="text-sm text-red-500">
-              {errors.currentStock.message}
-            </p>
+            <p className="text-sm text-red-500">{errors.currentStock.message}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="reorderThreshold">Reorder Threshold</Label>
+        <div className="space-y-1">
+          <Label htmlFor="reorderThreshold">Threshold</Label>
           <Input
             id="reorderThreshold"
             type="number"
             {...register('reorderThreshold')}
+            className="rounded-xl"
           />
           {errors.reorderThreshold && (
-            <p className="text-sm text-red-500">
-              {errors.reorderThreshold.message}
-            </p>
+            <p className="text-sm text-red-500">{errors.reorderThreshold.message}</p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="reorderQuantity">Reorder Quantity</Label>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="reorderQuantity">Reorder Qty</Label>
           <Input
             id="reorderQuantity"
             type="number"
             {...register('reorderQuantity')}
+            className="rounded-xl"
           />
           {errors.reorderQuantity && (
-            <p className="text-sm text-red-500">
-              {errors.reorderQuantity.message}
-            </p>
+            <p className="text-sm text-red-500">{errors.reorderQuantity.message}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="costPerUnit">Cost Per Unit (Le)</Label>
+        <div className="space-y-1">
+          <Label htmlFor="costPerUnit">Cost (Le)</Label>
           <Input
             id="costPerUnit"
             type="number"
             step="0.01"
             {...register('costPerUnit')}
+            className="rounded-xl"
           />
           {errors.costPerUnit && (
-            <p className="text-sm text-red-500">
-              {errors.costPerUnit.message}
-            </p>
+            <p className="text-sm text-red-500">{errors.costPerUnit.message}</p>
           )}
         </div>
       </div>
 
       <div>
         <Label htmlFor="expiryDate">Expiry Date</Label>
-        <Input id="expiryDate" type="date" {...register('expiryDate')} />
+        <Input id="expiryDate" type="date" {...register('expiryDate')} className="rounded-xl" />
         {errors.expiryDate && (
-          <p className="text-sm text-red-500">{errors.expiryDate.message}</p>
+          <p className="text-sm text-red-500 mt-1">{errors.expiryDate.message}</p>
         )}
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button type="submit" disabled={isSubmitting} className="w-full h-11 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100">
         {isSubmitting ? 'Saving...' : submitLabel}
       </Button>
     </form>

@@ -1,0 +1,113 @@
+import { prisma } from './prisma';
+import { embeddingsSearch, NAMESPACE } from './geneline';
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+
+export async function generateResponse(message: string): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    return 'OpenAI is not configured. Set OPENAI_API_KEY in your environment.';
+  }
+
+  try {
+    // 1. Fetch Inventory Context
+    const medicines = await prisma.medicine.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        name: true,
+        unit: true,
+        currentStock: true,
+        reorderThreshold: true,
+        reorderQuantity: true,
+        expiryDate: true,
+        costPerUnit: true,
+      },
+    });
+
+    // 2. Fetch STG Context via Geneline Vector Search
+    let stgContext = '';
+    try {
+      const searchResult = await embeddingsSearch({
+        query: message,
+        namespace: NAMESPACE,
+        topK: 3,
+      });
+
+      if (searchResult.matches && searchResult.matches.length > 0) {
+        stgContext = searchResult.matches
+          .map((m) => m.metadata?.text || m.metadata?.content || '')
+          .filter(Boolean)
+          .join('\n\n---\n\n');
+      }
+    } catch (err) {
+      console.error('STG Search error:', err);
+    }
+
+    const totalMeds = medicines.length;
+    const totalStock = medicines.reduce((s, m) => s + m.currentStock, 0);
+    const lowStock = medicines.filter((m) => m.currentStock <= m.reorderThreshold);
+    const totalValue = medicines.reduce((s, m) => s + m.currentStock * m.costPerUnit, 0);
+
+    const inventoryTable = medicines
+      .map(
+        (m) =>
+          `- ${m.name}: ${m.currentStock} ${m.unit} (threshold: ${m.reorderThreshold}, reorder qty: ${m.reorderQuantity}, expires: ${m.expiryDate}, cost: Le ${m.costPerUnit})`
+      )
+      .join('\n');
+
+    const systemPrompt = `You are SmartShelf Assistant, a medical and inventory chatbot for pharmacies in Sierra Leone. Your primary goal is to help staff manage inventory and provide GROUNDED treatment advice based on official guidelines.
+
+--- 
+STG CONTEXT (Official Sierra Leone Standard Treatment Guidelines):
+${stgContext || 'No specific guideline snippets found for this query.'}
+---
+
+---
+INVENTORY CONTEXT:
+- Total medicines: ${totalMeds}
+- Total units in stock: ${totalStock}
+- Low stock items: ${lowStock.length}
+- Total inventory value: Le ${totalValue.toLocaleString()}
+
+Full inventory:
+${inventoryTable}
+---
+
+Instructions:
+1. INVENTORY: Answer questions about stock levels, expiry dates, and restock needs using the INVENTORY CONTEXT.
+2. MEDICAL ADVICE: If asked about treatment or prescription, ONLY use the STG CONTEXT provided. 
+   - If the STG CONTEXT contains relevant information, summarize it clearly.
+   - If the STG CONTEXT is missing or irrelevant for a medical query, say: "I couldn't find official guidance for this in the Standard Treatment Guidelines. Please consult a senior pharmacist."
+   - ALWAYS remind them that this is for guidance only and doesn't replace professional judgment.
+3. STYLE: Keep answers concise, professional, and friendly. Use emojis sparingly. Format medicine names in *bold*.
+4. CURRENCY: Prices are in Sierra Leonean Leones (Le).`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message },
+        ],
+        max_tokens: 500,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('OpenAI error:', err);
+      return 'Sorry, I had trouble reaching the AI. Try again.';
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || 'No response generated.';
+  } catch (err) {
+    console.error('Query error:', err);
+    return 'Sorry, I hit an error. Try again.';
+  }
+}

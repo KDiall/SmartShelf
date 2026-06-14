@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const token = signToken({ userId: user.id, phone: user.phone });
+  const token = signToken({ userId: user.id, phone: user.phone, role: user.role });
 
   return NextResponse.json({
     token,
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       id: user.id,
       phone: user.phone,
       name: user.name,
+      role: user.role,
       verified: user.verified,
       createdAt: user.createdAt.toISOString(),
     },

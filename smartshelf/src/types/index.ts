@@ -4,6 +4,7 @@ export type ExpiryStatus = 'ok' | 'expiring_soon' | 'expired';
 export interface Medicine {
   id: string;
   name: string;
+  image?: string | null;
   unit: string;
   currentStock: number;
   reorderThreshold: number;
@@ -47,6 +48,7 @@ export interface User {
   id: string;
   phone: string;
   name: string | null;
+  role: string;
   verified: boolean;
   createdAt: string;
 }
@@ -55,4 +57,14 @@ export interface AuthState {
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  phone: string;
+  name: string | null;
+  role: string;
+  verified: boolean;
+  createdAt: string;
+  createdBy: string | null;
 }

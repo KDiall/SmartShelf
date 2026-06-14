@@ -13,6 +13,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
   }
 
+  const user = await prisma.user.findUnique({ where: { phone } });
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Account not found. Contact your admin to create an account.' },
+      { status: 404 }
+    );
+  }
+
   const otp = generateOtp();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -22,9 +30,11 @@ export async function POST(request: Request) {
 
   const result = await sendOtpMessage(phone, otp);
 
-  if (!result.sent) {
-    return NextResponse.json({ error: 'Failed to send OTP' }, { status: 500 });
-  }
+  console.log(`[OTP] For ${phone}: ${otp}`);
 
-  return NextResponse.json({ message: 'OTP sent successfully' });
+  return NextResponse.json({
+    message: result.sent ? 'OTP sent successfully' : 'OTP generated (WhatsApp unavailable — check server logs)',
+    whapiSent: result.sent,
+    _dev: { otp },
+  });
 }

@@ -9,7 +9,14 @@ export function useSync() {
   const loadData = usePharmacyStore((s) => s.loadData);
 
   useEffect(() => {
-    if (!online) return;
+    if (!online) {
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        navigator.serviceWorker.ready.then((reg) => {
+          (reg as unknown as { sync: { register: (tag: string) => Promise<void> } }).sync.register('sync-pending-sales').catch(() => {});
+        });
+      }
+      return;
+    }
     syncPendingSales().then(() => loadData());
   }, [online, loadData]);
 }

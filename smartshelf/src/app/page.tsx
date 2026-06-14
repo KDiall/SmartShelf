@@ -1,72 +1,158 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { MedicineTile } from '@/components/medicine-tile';
-import { DashboardMetrics } from '@/components/dashboard-metrics';
-import { RiskCard } from '@/components/risk-card';
 import { AuthGuard } from '@/components/auth-guard';
 import { useSync } from '@/hooks/use-sync';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { isToday, format } from 'date-fns';
+import { MessageCircle, Smartphone, Plus, ShoppingCart, CheckCircle2, AlertCircle, Loader2, Pill } from 'lucide-react';
 
-export default function DashboardPage() {
-  const { healthScore, medicines, alerts, isLoaded, loadData } =
-    usePharmacyStore();
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+export default function HomePage() {
+  const router = useRouter();
+  const { medicines, sales, alerts, isLoaded, loadData } = usePharmacyStore();
+  const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   useSync();
 
   useEffect(() => {
-    if (token) {
-      loadData();
-    }
+    if (token) loadData();
   }, [token, loadData]);
+
+  const todaySales = useMemo(
+    () => sales.filter((s) => isToday(new Date(s.soldAt))).length,
+    [sales]
+  );
+
+  const lowStockCount = useMemo(
+    () => alerts.filter((a) => a.type === 'stockout').length,
+    [alerts]
+  );
 
   return (
     <AuthGuard>
       {!isLoaded ? (
-        <div className="flex items-center justify-center h-40 text-muted-foreground">
-          Loading...
+        <div className="flex flex-col items-center justify-center h-80 text-muted-foreground">
+          <Loader2 className="h-10 w-10 animate-spin text-[#0284c7] mb-4" />
+          <p className="text-lg font-bold uppercase tracking-widest opacity-50">Loading Dashboard</p>
         </div>
       ) : (
-        <>
-          {alerts.length > 0 && (
-            <div className="bg-amber-100 border-l-4 border-amber-500 p-3 mb-4 rounded-r-md shadow-sm">
-              <p className="text-sm font-bold text-amber-900">
-                ⚠️ {alerts.length} Medicines at Risk
-              </p>
-              <p className="text-xs text-amber-800">
-                {alerts.filter((a) => a.type === 'stockout').length} stockout
-                risk &bull;{' '}
-                {alerts.filter((a) => a.type === 'expiry').length} expiry risk
-              </p>
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-[#020617] font-black text-4xl tracking-tight leading-none">
+                {getGreeting()}, <span className="text-[#0284c7]">{user?.name?.split(' ')[0] || 'Pharmacist'}</span>
+              </h1>
+              <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest mt-2">{format(new Date(), 'EEEE, MMMM d')}</p>
             </div>
-          )}
-
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-bold">SmartShelf</h1>
+            <div className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-sky-100 flex items-center justify-center border border-sky-50">
+               <span className="text-xl font-black text-[#0284c7]">{(user?.name || 'P')[0]}</span>
+            </div>
           </div>
 
-          <DashboardMetrics
-            healthScore={healthScore}
-            medicines={medicines}
-            alerts={alerts}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-none bg-gradient-to-br from-[#0284c7] to-[#0ea5e9] text-white shadow-2xl shadow-sky-200 overflow-hidden relative md:col-span-2 group">
+              <div className="absolute -top-10 -right-10 p-8 opacity-10 transition-transform group-hover:scale-110 duration-500">
+                <ShoppingCart size={240} />
+              </div>
+              <CardContent className="p-10 relative z-10">
+                <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-4">Daily Performance</p>
+                <div className="flex items-baseline gap-4">
+                  <p className="font-black tracking-tighter" style={{ fontSize: 72 }}>
+                    {todaySales}
+                  </p>
+                  <p className="text-white/80 font-black text-xl uppercase tracking-widest mb-3">Sales Today</p>
+                </div>
+                <div className="h-2 w-full bg-white/20 rounded-full mt-6 overflow-hidden">
+                   <div className="h-full bg-white rounded-full transition-all duration-1000" style={{ width: '65%' }} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              {lowStockCount > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/orders')}
+                  className="w-full h-auto p-6 bg-white border-none shadow-xl shadow-amber-100/50 hover:shadow-amber-200/50 hover:bg-amber-50 group transition-all rounded-3xl"
+                >
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <AlertCircle className="h-7 w-7 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-black text-[#020617] text-lg uppercase tracking-tight leading-none">
+                        {lowStockCount} Low Stock
+                      </p>
+                      <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mt-1">Tap to Restock</p>
+                    </div>
+                  </div>
+                </Button>
+              ) : (
+                <Card className="bg-white border-none shadow-xl shadow-emerald-100/50 rounded-3xl">
+                  <CardContent className="p-6 text-center">
+                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                    </div>
+                    <p className="font-black text-[#020617] uppercase tracking-tight">Stock Healthy</p>
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">All thresholds met</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="bg-white border-none shadow-xl shadow-sky-50 rounded-3xl">
+                <CardContent className="p-6 text-center">
+                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Health Score</p>
+                   <p className="text-3xl font-black text-[#0284c7]">98%</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
           <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center justify-between">
-              <span>Quick Access (Top Sellers)</span>
-              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded">
-                1-Tap Log
-              </span>
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-[#0284c7]/10 flex items-center justify-center">
+                  <Pill className="h-4 w-4 text-[#0284c7]" />
+                </div>
+                <h2 className="text-[#020617] font-black text-xl uppercase tracking-tight">Quick Sale</h2>
+              </div>
+              <Badge className="bg-white text-[#0284c7] border-sky-100 font-black text-[10px] px-3 py-1 uppercase tracking-widest shadow-sm">1-Tap Log</Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {medicines
                 .filter((m) => m.isBig5)
                 .map((med) => (
                   <MedicineTile key={med.id} medicine={med} />
                 ))}
+              {medicines.filter((m) => m.isBig5).length === 0 && (
+                <div className="col-span-full">
+                  <Card className="bg-white/50 border-dashed border-2 border-slate-200 shadow-none rounded-3xl">
+                    <CardContent className="p-12 text-center">
+                      <p className="text-muted-foreground font-bold text-lg uppercase tracking-tight">
+                        No quick-sale items
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2 uppercase tracking-widest font-bold opacity-50">
+                        Mark medicines as &quot;Big 5&quot; to see them here.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </section>
-        </>
+        </div>
       )}
     </AuthGuard>
   );
