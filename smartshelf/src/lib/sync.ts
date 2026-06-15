@@ -27,24 +27,31 @@ async function retry<T>(
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'success';
 
 export async function bootstrapFromServer(userId?: string, authToken?: string): Promise<void> {
-  const url = userId ? `/api/medicines?userId=${userId}` : '/api/medicines';
+  const medUrl = userId ? `/api/medicines?userId=${userId}` : '/api/medicines';
+  const salesUrl = userId ? `/api/sales?userId=${userId}` : '/api/sales';
   const headers = authHeaders(authToken);
   const [medRes, salesRes] = await Promise.all([
-    fetch(url, { headers }),
-    fetch('/api/sales', { headers }),
+    fetch(medUrl, { headers }),
+    fetch(salesUrl, { headers }),
   ]);
 
-  if (medRes.ok) {
-    const medicines: Medicine[] = await medRes.json();
-    if (medicines.length > 0) {
-      await idb.medicines.bulkPut(medicines);
+  if (!medRes.ok) return;
+  if (!salesRes.ok) return;
+
+  const serverMedicines: Medicine[] = await medRes.json();
+  const serverSales: Sale[] = await salesRes.json();
+
+  for (const med of serverMedicines) {
+    const local = await idb.medicines.get(med.id);
+    if (!local) {
+      await idb.medicines.put(med);
     }
   }
 
-  if (salesRes.ok) {
-    const sales: Sale[] = await salesRes.json();
-    if (sales.length > 0) {
-      await idb.sales.bulkPut(sales);
+  for (const sale of serverSales) {
+    const local = await idb.sales.get(sale.id);
+    if (!local) {
+      await idb.sales.put(sale);
     }
   }
 }

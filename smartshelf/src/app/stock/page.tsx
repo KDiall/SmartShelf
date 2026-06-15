@@ -52,10 +52,12 @@ export default function StockPage() {
     costPerUnit: number;
     isBig5?: boolean;
   }) {
+    const user = useAuthStore.getState().user;
     const medicine: Medicine = {
       id: crypto.randomUUID(),
       ...data,
       isBig5: data.isBig5 ?? false,
+      userId: user?.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

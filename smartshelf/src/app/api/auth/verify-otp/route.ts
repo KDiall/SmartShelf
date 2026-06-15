@@ -3,11 +3,13 @@ import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/jwt';
 
 export async function POST(request: Request) {
-  const { phone, code } = await request.json();
+  let { phone, code } = await request.json();
 
   if (!phone || !code) {
     return NextResponse.json({ error: 'Phone and code are required' }, { status: 400 });
   }
+
+  phone = phone.replace(/[^0-9]/g, '');
 
   const otp = await prisma.otp.findFirst({
     where: {

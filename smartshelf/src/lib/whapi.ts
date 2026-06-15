@@ -48,8 +48,9 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
 }
 
 export async function sendTextMessage(to: string, text: string): Promise<WhapiResponse> {
+  const sanitized = to.replace(/[^0-9]/g, '');
   return whapiRequest('/messages/text', {
-    to,
+    to: sanitized,
     body: text,
   });
 }

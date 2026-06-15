@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/orders', label: 'Orders', Icon: ShoppingCart },
   { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
   { href: '/more', label: 'More', Icon: MoreHorizontal },
+  { href: '/settings', label: 'Settings', Icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -232,20 +233,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function OnlineIndicator() {
-  const [online, setOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+  const online = useSyncExternalStore(
+    (callback) => {
+      window.addEventListener('online', callback);
+      window.addEventListener('offline', callback);
+      return () => {
+        window.removeEventListener('online', callback);
+        window.removeEventListener('offline', callback);
+      };
+    },
+    () => navigator.onLine,
+    () => true,
   );
-
-  useEffect(() => {
-    const goOnline = () => setOnline(true);
-    const goOffline = () => setOnline(false);
-    window.addEventListener('online', goOnline);
-    window.addEventListener('offline', goOffline);
-    return () => {
-      window.removeEventListener('online', goOnline);
-      window.removeEventListener('offline', goOffline);
-    };
-  }, []);
 
   return (
     <div className="flex items-center gap-1.5">

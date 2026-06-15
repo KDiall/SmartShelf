@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       where: { id: med.id },
       update: {
         name: med.name,
+        image: med.image ?? null,
         unit: med.unit,
         currentStock: med.currentStock,
         reorderThreshold: med.reorderThreshold,
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       create: {
         id: med.id,
         name: med.name,
+        image: med.image ?? null,
         unit: med.unit,
         currentStock: med.currentStock,
         reorderThreshold: med.reorderThreshold,

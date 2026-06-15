@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `smartshelf-static-${CACHE_VERSION}`;
 const API_CACHE = `smartshelf-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
@@ -18,11 +18,6 @@ const STATIC_URLS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(STATIC_URLS);
-    })
-  );
   self.skipWaiting();
 });
 

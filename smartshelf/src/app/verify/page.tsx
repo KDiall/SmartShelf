@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label';
 function VerifyForm() {
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') || '';
-  const devOtp = searchParams.get('otp') || '';
-  const [code, setCode] = useState(devOtp);
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -36,7 +35,7 @@ function VerifyForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ error: 'Invalid OTP' }));
         throw new Error(data.error || 'Invalid OTP');
       }
 

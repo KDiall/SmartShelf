@@ -48,6 +48,9 @@ export interface User {
   id: string;
   phone: string;
   name: string | null;
+  address: string | null;
+  location: string | null;
+  avatar: string | null;
   role: string;
   verified: boolean;
   createdAt: string;

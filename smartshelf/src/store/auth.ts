@@ -18,12 +18,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setAuth: (token: string, user: User) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      import('@/lib/idb').then(({ idb }) =>
+        Promise.all([idb.medicines.clear(), idb.sales.clear(), idb.pendingSales.clear()])
+      );
+    }
     set({ token, user, isAuthenticated: true });
   },
 
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      import('@/lib/idb').then(({ idb }) =>
+        Promise.all([idb.medicines.clear(), idb.sales.clear(), idb.pendingSales.clear()])
+      );
+    }
     set({ token: null, user: null, isAuthenticated: false });
   },
 

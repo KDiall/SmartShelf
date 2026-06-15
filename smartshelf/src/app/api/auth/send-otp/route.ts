@@ -7,18 +7,20 @@ function generateOtp(): string {
 }
 
 export async function POST(request: Request) {
-  const { phone } = await request.json();
+  let { phone } = await request.json();
 
   if (!phone || typeof phone !== 'string') {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
   }
 
-  const user = await prisma.user.findUnique({ where: { phone } });
+  phone = phone.replace(/[^0-9]/g, '');
+
+  let user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {
-    return NextResponse.json(
-      { error: 'Account not found. Contact your admin to create an account.' },
-      { status: 404 }
-    );
+    user = await prisma.user.create({
+      data: { phone },
+    });
+    console.log(`[AUTO-REGISTER] Created user for ${phone} (id: ${user.id})`);
   }
 
   const otp = generateOtp();
@@ -35,6 +37,5 @@ export async function POST(request: Request) {
   return NextResponse.json({
     message: result.sent ? 'OTP sent successfully' : 'OTP generated (WhatsApp unavailable — check server logs)',
     whapiSent: result.sent,
-    ...(process.env.NODE_ENV === 'development' ? { _dev: { otp } } : {}),
   });
 }

@@ -36,14 +36,12 @@ export default function LoginPage() {
         body: JSON.stringify({ phone }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to send OTP' }));
         throw new Error(data.error || 'Failed to send OTP');
       }
 
-      const otpParam = data._dev?.otp ? `&otp=${data._dev.otp}` : '';
-      router.push(`/verify?phone=${encodeURIComponent(phone)}${otpParam}`);
+      router.push(`/verify?phone=${encodeURIComponent(phone)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -79,7 +77,7 @@ export default function LoginPage() {
                   className="text-lg"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter the number your admin registered for you.
+                  Enter your WhatsApp number to receive a login code.
                 </p>
               </div>
 

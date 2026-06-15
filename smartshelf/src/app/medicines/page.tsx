@@ -51,9 +51,11 @@ export default function MedicinesPage() {
     currentStock: number; reorderThreshold: number; reorderQuantity: number;
     expiryDate: string; costPerUnit: number; isBig5: boolean;
   }) {
+    const user = useAuthStore.getState().user;
     const newMed: Medicine = {
       ...data,
       id: crypto.randomUUID(),
+      userId: user?.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

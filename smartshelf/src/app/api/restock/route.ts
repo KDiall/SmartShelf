@@ -3,22 +3,30 @@ import { sendOrderMessage } from '@/lib/whapi';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
-  const { method } = await request.json();
+  const { method, items: bodyItems } = await request.json();
+  const userId = request.headers.get('x-user-id');
 
-  const medicines = await prisma.medicine.findMany();
-  const lowStock = medicines.filter(
-    (m: { currentStock: number; reorderThreshold: number }) => m.currentStock <= m.reorderThreshold
-  );
+  let items: { name: string; quantity: number; unit: string }[];
 
-  if (lowStock.length === 0) {
-    return NextResponse.json({ message: 'No items to restock' });
+  if (bodyItems) {
+    items = bodyItems;
+  } else {
+    const where = userId ? { userId } : {};
+    const medicines = await prisma.medicine.findMany({ where });
+    const lowStock = medicines.filter(
+      (m: { currentStock: number; reorderThreshold: number }) => m.currentStock <= m.reorderThreshold
+    );
+
+    if (lowStock.length === 0) {
+      return NextResponse.json({ message: 'No items to restock' });
+    }
+
+    items = lowStock.map((m: { name: string; reorderQuantity: number; unit: string }) => ({
+      name: m.name,
+      quantity: m.reorderQuantity,
+      unit: m.unit,
+    }));
   }
-
-  const items = lowStock.map((m: { name: string; reorderQuantity: number; unit: string }) => ({
-    name: m.name,
-    quantity: m.reorderQuantity,
-    unit: m.unit,
-  }));
 
   const supplierPhone =
     process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23276000000';
