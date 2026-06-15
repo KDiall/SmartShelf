@@ -23,5 +23,5 @@ export function useSync() {
         });
       }
     }
-  }, [online, loadData, user?.id]);
+  }, [online, loadData, user?.id, token]);
 }

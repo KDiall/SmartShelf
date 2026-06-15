@@ -46,7 +46,11 @@ export default function MedicinesPage() {
     setDeleteId(null);
   }
 
-  async function handleAddMedicine(data: any) {
+  async function handleAddMedicine(data: {
+    name: string; image?: string | null; unit: string;
+    currentStock: number; reorderThreshold: number; reorderQuantity: number;
+    expiryDate: string; costPerUnit: number; isBig5: boolean;
+  }) {
     const newMed: Medicine = {
       ...data,
       id: crypto.randomUUID(),

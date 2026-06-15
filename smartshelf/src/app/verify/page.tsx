@@ -8,24 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 function VerifyForm() {
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
-
   const phone = searchParams.get('phone') || '';
   const devOtp = searchParams.get('otp') || '';
+  const [code, setCode] = useState(devOtp);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   useEffect(() => {
     if (!phone) {
       router.push('/login');
     }
-    if (devOtp) {
-      setCode(devOtp);
-    }
-  }, [phone, devOtp, router]);
+  }, [phone, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

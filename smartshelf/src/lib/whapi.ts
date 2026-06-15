@@ -34,7 +34,7 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
     const isTimeout =
       err instanceof Error &&
       (err.name === 'AbortError' ||
-        (err.cause as any)?.code === 'UND_ERR_CONNECT_TIMEOUT');
+        (err.cause as Record<string, unknown>)?.code === 'UND_ERR_CONNECT_TIMEOUT');
 
     return {
       sent: false,

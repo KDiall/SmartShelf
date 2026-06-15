@@ -16,6 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { MedicineForm } from '@/components/medicine-form';
+import type { Medicine } from '@/types';
 
 export default function OrdersPage() {
   const { medicines, loadData, addMedicine } = usePharmacyStore();
@@ -31,8 +32,12 @@ export default function OrdersPage() {
 
   const restockItems = computeRestockItems(medicines);
 
-  async function handleAddMedicine(data: any) {
-    const newMed: any = {
+  async function handleAddMedicine(data: {
+    name: string; image?: string | null; unit: string;
+    currentStock: number; reorderThreshold: number; reorderQuantity: number;
+    expiryDate: string; costPerUnit: number; isBig5: boolean;
+  }) {
+    const newMed: Medicine = {
       ...data,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),

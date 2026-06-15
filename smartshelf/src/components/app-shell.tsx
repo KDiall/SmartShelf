@@ -31,6 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration guard
     setMounted(true);
   }, []);
 
@@ -231,10 +232,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function OnlineIndicator() {
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
 
   useEffect(() => {
-    setOnline(navigator.onLine);
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
     window.addEventListener('online', goOnline);

@@ -1,7 +1,7 @@
 const BASE_URL = process.env.PUBLIC_BASE_URL || "https://message.geneline-x.net";
 const NAMESPACE = process.env.GENELINE_X_NAMESPACE || "squench";
 
-function messageAuthHeaders() {
+function messageAuthHeaders(): Record<string, string> {
   const key = process.env.GENELINE_X_API_KEY;
   if (!key) throw new Error("GENELINE_X_API_KEY is not set");
   return {
@@ -38,7 +38,7 @@ export async function enqueueIngestion(input: {
     url: string;
     filename: string;
     mime?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
   namespace: string;
 }) {
@@ -56,7 +56,7 @@ export async function enqueueIngestion(input: {
   }>;
 }
 
-export async function getJob(jobId: string): Promise<Record<string, any>> {
+export async function getJob(jobId: string): Promise<Record<string, unknown>> {
   const res = await genelineFetch(`/api/v1/jobs/${jobId}`);
   if (!res.ok) {
     const text = await res.text();
@@ -64,7 +64,7 @@ export async function getJob(jobId: string): Promise<Record<string, any>> {
   }
   const data = await res.json();
   console.log(`[getJob] jobId=${jobId} response:`, JSON.stringify(data));
-  return data;
+  return data as Record<string, unknown>;
 }
 
 export async function embeddingsSearch(input: {
@@ -72,7 +72,7 @@ export async function embeddingsSearch(input: {
   namespace: string;
   indexName?: string;
   topK?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
 }) {
   const body = {
     query: input.query,
@@ -94,9 +94,23 @@ export async function embeddingsSearch(input: {
     matches: Array<{
       id: string;
       score: number;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }>;
   }>;
+}
+
+type DeleteResponse = Record<string, unknown> | boolean;
+
+function isDeleteOk(j: DeleteResponse): boolean {
+  if (j === true) return true;
+  if (typeof j !== 'object' || j === null) return false;
+  return (
+    j?.ok === true ||
+    j?.success === true ||
+    j?.deleted === true ||
+    j?.acknowledged === true ||
+    j?.status === "success"
+  );
 }
 
 export async function deleteFile(input: {
@@ -106,7 +120,8 @@ export async function deleteFile(input: {
   indexName?: string;
 }): Promise<boolean> {
   if (input.fileId) {
-    const key = (messageAuthHeaders() as any)["X-API-Key"] as string;
+    const headers = messageAuthHeaders();
+    const key = headers["X-API-Key"];
     const path = `/api/v1/files/${encodeURIComponent(input.fileId)}?api_key=${encodeURIComponent(key)}`;
     const body = JSON.stringify({
       ...(input.namespace ? { namespace: input.namespace } : {}),
@@ -124,15 +139,8 @@ export async function deleteFile(input: {
       const text = await res.text();
       throw new Error(`Delete file by id failed: ${res.status} ${text}`);
     }
-    const j = (await res.json().catch(() => ({}))) as any;
-    return (
-      j === true ||
-      j?.ok === true ||
-      j?.success === true ||
-      j?.deleted === true ||
-      j?.acknowledged === true ||
-      j?.status === "success"
-    );
+    const j = (await res.json().catch(() => ({}))) as DeleteResponse;
+    return isDeleteOk(j);
   }
 
   if (input.url) {
@@ -148,7 +156,8 @@ export async function deleteFile(input: {
     lastSeg = lastSeg.split("?")[0].split("#")[0];
     const derivedFileId = lastSeg.replace(/\.[^./?#]+$/, "");
 
-    const key = (messageAuthHeaders() as any)["X-API-Key"] as string;
+    const headers = messageAuthHeaders();
+    const key = headers["X-API-Key"];
     const path = `/api/v1/files/${encodeURIComponent(derivedFileId)}?api_key=${encodeURIComponent(key)}`;
     const body = JSON.stringify({
       ...(input.namespace ? { namespace: input.namespace } : {}),
@@ -166,15 +175,8 @@ export async function deleteFile(input: {
       const text = await res.text();
       throw new Error(`Delete file by url-derived id failed: ${res.status} ${text}`);
     }
-    const j = (await res.json().catch(() => ({}))) as any;
-    return (
-      j === true ||
-      j?.ok === true ||
-      j?.success === true ||
-      j?.deleted === true ||
-      j?.acknowledged === true ||
-      j?.status === "success"
-    );
+    const j = (await res.json().catch(() => ({}))) as DeleteResponse;
+    return isDeleteOk(j);
   }
 
   throw new Error("deleteFile requires url or fileId");

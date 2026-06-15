@@ -13,7 +13,10 @@ export default function GuidelinesPage() {
   const [ingesting, setIngesting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [managedGuidelines, setManagedGuidelines] = useState<any[]>([]);
+  const [managedGuidelines, setManagedGuidelines] = useState<{
+    id: string; name: string; url: string; status: string;
+    userId: string | null; createdAt: string; updatedAt: string;
+  }[]>([]);
 
   async function loadGuidelines() {
     if (!token) return;
@@ -27,7 +30,11 @@ export default function GuidelinesPage() {
     }
   }
 
-  useEffect(() => { loadGuidelines(); }, [token]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
+    loadGuidelines();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   async function ingestGuideline(url: string, filename: string) {
     if (!token) return;

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { AuthGuard } from '@/components/auth-guard';
@@ -11,16 +11,11 @@ export default function EditMedicinePage() {
   const router = useRouter();
   const params = useParams();
   const { medicines, loadData, updateMedicine } = usePharmacyStore();
-  const [medicine, setMedicine] = useState<Medicine | null>(null);
+  const medicine = medicines.find((m) => m.id === params.id) ?? null;
 
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    const found = medicines.find((m) => m.id === params.id);
-    if (found) setMedicine(found);
-  }, [medicines, params.id]);
 
   async function onSubmit(data: {
     name: string;

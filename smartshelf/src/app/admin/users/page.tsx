@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, ShieldCheck, User, X } from 'lucide-react';
+import { Plus, Trash2, ShieldCheck, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +47,11 @@ export default function AdminUsersPage() {
     }
   }
 
-  useEffect(() => { loadUsers(); }, [token]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

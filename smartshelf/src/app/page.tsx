@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { isToday, format } from 'date-fns';
-import { MessageCircle, Smartphone, Plus, ShoppingCart, CheckCircle2, AlertCircle, Loader2, Pill } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, AlertCircle, Loader2, Pill } from 'lucide-react';
 
 function getGreeting(): string {
   const h = new Date().getHours();

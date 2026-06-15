@@ -26,15 +26,15 @@ export const ourFileRouter = {
     .middleware(async ({ input }) => {
       return verifyAdmin(input);
     })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return { uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url };
+    .onUploadComplete(async ({ file }) => {
+      return { url: file.ufsUrl ?? file.url };
     }),
   medicineImageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
     .input(z.object({ token: z.string() }))
     .middleware(async ({ input }) => {
       return verifyAuth(input);
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ file }) => {
       return { url: file.ufsUrl ?? file.url };
     }),
 } satisfies FileRouter;

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       err instanceof Error &&
       (err.name === 'AbortError' ||
         err.cause?.constructor?.name?.includes('Timeout') ||
-        (err.cause as any)?.code === 'UND_ERR_CONNECT_TIMEOUT')
+        (err.cause as Record<string, unknown>)?.code === 'UND_ERR_CONNECT_TIMEOUT')
         ? 'AI ingestion service timed out. Please try again later.'
         : 'Failed to process document';
     return NextResponse.json({ error: message }, { status: 500 });
