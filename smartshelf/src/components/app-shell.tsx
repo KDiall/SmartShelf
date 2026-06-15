@@ -2,8 +2,9 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText } from 'lucide-react';
+import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
+import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
 import { useSync } from '@/hooks/use-sync';
 import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet';
@@ -22,6 +23,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const syncStatus = usePharmacyStore((s) => s.syncStatus);
+  const isOnline = usePharmacyStore((s) => s.isOnline);
+  const retrySync = usePharmacyStore((s) => s.retrySync);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -98,11 +102,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {!sidebarCollapsed && mounted && user && (
-          <div className="p-4 border-t border-white/10">
-            <p className="text-sm text-white/60">{user.name || user.phone}</p>
-            <p className="text-xs text-white/40 capitalize">{user.role}</p>
-          </div>
+        {!sidebarCollapsed && mounted && (
+          <>
+            <button
+              onClick={retrySync}
+              className="flex items-center gap-2 px-4 py-2 mx-3 mb-1 rounded-xl text-xs font-medium transition-colors"
+            >
+              {syncStatus === 'syncing' && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
+              {syncStatus === 'error' && <AlertCircle className="h-3 w-3 text-red-400" />}
+              {syncStatus === 'success' && <CheckCircle2 className="h-3 w-3 text-green-400" />}
+              {syncStatus === 'idle' && isOnline && <span className="h-2 w-2 rounded-full bg-green-400" />}
+              {syncStatus === 'idle' && !isOnline && <span className="h-2 w-2 rounded-full bg-red-400" />}
+              {syncStatus === 'syncing' && <span className="text-yellow-400">Syncing...</span>}
+              {syncStatus === 'error' && <span className="text-red-400">Sync failed — tap to retry</span>}
+              {syncStatus === 'success' && <span className="text-green-400">Synced</span>}
+              {syncStatus === 'idle' && isOnline && <span className="text-green-400/70">Connected</span>}
+              {syncStatus === 'idle' && !isOnline && <span className="text-red-400">Offline</span>}
+            </button>
+            {user && (
+              <div className="p-4 border-t border-white/10">
+                <p className="text-sm text-white/60">{user.name || user.phone}</p>
+                <p className="text-xs text-white/40 capitalize">{user.role}</p>
+              </div>
+            )}
+          </>
         )}
       </aside>
 

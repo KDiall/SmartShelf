@@ -23,21 +23,14 @@ export async function POST(request: Request) {
   const supplierPhone =
     process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23276000000';
 
-  if (method === 'sms') {
-    const lines = items.map((i) => `${i.name} x${i.quantity} ${i.unit}`);
-    const text = `RESTOCK: ${lines.join(', ')}`;
-    const result = await sendOrderMessage(supplierPhone, items);
-    if (!result.sent) {
-      return NextResponse.json({ error: result.error || 'Failed to send SMS' }, { status: 500 });
-    }
-    return NextResponse.json({ message: 'Order sent via SMS', items });
-  }
-
   const result = await sendOrderMessage(supplierPhone, items);
 
-  if (!result.sent) {
-    return NextResponse.json({ error: result.error || 'Failed to send order' }, { status: 500 });
-  }
-
-  return NextResponse.json({ message: 'Order sent via WhatsApp', items });
+  return NextResponse.json({
+    message: result.sent
+      ? `Order sent via ${method === 'sms' ? 'SMS' : 'WhatsApp'}`
+      : 'Order recorded (WhatsApp unavailable — contact supplier manually)',
+    items,
+    whapiSent: result.sent,
+    whapiError: result.error,
+  });
 }

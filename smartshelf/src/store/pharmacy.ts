@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { idb } from '@/lib/idb';
 import type { Medicine, Sale, StockAlert } from '@/types';
 import { computeAlerts, computeHealthScore } from '@/lib/risk-engine';
-import { syncMedicinesToServer } from '@/lib/sync';
+import { syncMedicinesToServer, syncPendingSales, type SyncStatus } from '@/lib/sync';
 
 function getToken(): string | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -15,11 +15,14 @@ interface PharmacyStore {
   alerts: StockAlert[];
   healthScore: number;
   isLoaded: boolean;
+  isOnline: boolean;
+  syncStatus: SyncStatus;
   loadData: () => Promise<void>;
   recordSale: (medicineId: string, quantity?: number) => Promise<void>;
   addMedicine: (medicine: Medicine) => Promise<void>;
   updateMedicine: (medicine: Medicine) => Promise<void>;
   deleteMedicine: (id: string) => Promise<void>;
+  retrySync: () => Promise<void>;
 }
 
 export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
@@ -28,6 +31,8 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
   alerts: [],
   healthScore: 100,
   isLoaded: false,
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  syncStatus: 'idle',
 
   loadData: async () => {
     const medicines = await idb.medicines.toArray();
@@ -63,24 +68,34 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
     await idb.medicines.put(updated);
 
     await get().loadData();
+
+    if (navigator.onLine) {
+      get().retrySync();
+    }
   },
 
   addMedicine: async (medicine: Medicine) => {
     await idb.medicines.put(medicine);
-    await syncMedicinesToServer([medicine], getToken());
+    const token = getToken();
+    if (token && navigator.onLine) {
+      await syncMedicinesToServer([medicine], token);
+    }
     await get().loadData();
   },
 
   updateMedicine: async (medicine: Medicine) => {
     await idb.medicines.put(medicine);
-    await syncMedicinesToServer([medicine], getToken());
+    const token = getToken();
+    if (token && navigator.onLine) {
+      await syncMedicinesToServer([medicine], token);
+    }
     await get().loadData();
   },
 
   deleteMedicine: async (id: string) => {
     await idb.medicines.delete(id);
     const token = getToken();
-    if (token) {
+    if (token && navigator.onLine) {
       fetch(`/api/medicines/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -88,4 +103,25 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
     }
     await get().loadData();
   },
+
+  retrySync: async () => {
+    const token = getToken();
+    if (!token || !navigator.onLine) return;
+    set({ syncStatus: 'syncing' });
+    const ok = await syncPendingSales(token);
+    set({ syncStatus: ok ? 'success' : 'error' });
+    setTimeout(() => {
+      if (get().syncStatus !== 'syncing') set({ syncStatus: 'idle' });
+    }, 3000);
+  },
 }));
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    usePharmacyStore.setState({ isOnline: true });
+    usePharmacyStore.getState().retrySync();
+  });
+  window.addEventListener('offline', () => {
+    usePharmacyStore.setState({ isOnline: false });
+  });
+}

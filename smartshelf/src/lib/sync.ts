@@ -8,6 +8,24 @@ function authHeaders(token?: string): Record<string, string> {
   };
 }
 
+async function retry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 1000
+): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise((r) => setTimeout(r, delay * Math.pow(2, i)));
+    }
+  }
+  throw new Error('retry failed');
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'success';
+
 export async function bootstrapFromServer(userId?: string, authToken?: string): Promise<void> {
   const url = userId ? `/api/medicines?userId=${userId}` : '/api/medicines';
   const headers = authHeaders(authToken);
@@ -31,36 +49,50 @@ export async function bootstrapFromServer(userId?: string, authToken?: string): 
   }
 }
 
-export async function syncPendingSales(authToken?: string): Promise<void> {
+export async function syncPendingSales(authToken?: string): Promise<boolean> {
   const pending = await idb.pendingSales.toArray();
-  if (pending.length === 0) return;
+  if (pending.length === 0) return true;
 
-  const res = await fetch('/api/sync', {
-    method: 'POST',
-    headers: authHeaders(authToken),
-    body: JSON.stringify({ sales: pending }),
-  });
+  try {
+    const res = await retry(() =>
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: authHeaders(authToken),
+        body: JSON.stringify({ sales: pending }),
+      })
+    );
 
-  if (!res.ok) return;
+    if (!res.ok) return false;
 
-  const synced = pending.map((s) => ({ ...s, synced: true }));
-  await idb.transaction('rw', idb.sales, idb.pendingSales, async () => {
-    await idb.sales.bulkPut(synced);
-    await idb.pendingSales.bulkDelete(pending.map((s) => s.id));
-  });
+    const synced = pending.map((s) => ({ ...s, synced: true }));
+    await idb.transaction('rw', idb.sales, idb.pendingSales, async () => {
+      await idb.sales.bulkPut(synced);
+      await idb.pendingSales.bulkDelete(pending.map((s) => s.id));
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function syncMedicinesToServer(
   medicines: Medicine[],
   authToken?: string
-): Promise<void> {
-  const res = await fetch('/api/medicines', {
-    method: 'POST',
-    headers: authHeaders(authToken),
-    body: JSON.stringify({ medicines }),
-  });
-
-  if (!res.ok) {
-    console.error('Failed to sync medicines');
+): Promise<boolean> {
+  try {
+    const res = await retry(() =>
+      fetch('/api/medicines', {
+        method: 'POST',
+        headers: authHeaders(authToken),
+        body: JSON.stringify({ medicines }),
+      })
+    );
+    return res.ok;
+  } catch {
+    return false;
   }
+}
+
+export async function syncAll(authToken?: string): Promise<boolean> {
+  return syncPendingSales(authToken);
 }

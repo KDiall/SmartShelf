@@ -22,6 +22,7 @@ export default function OrdersPage() {
   const token = useAuthStore((s) => s.token);
   const [sending, setSending] = useState<'whatsapp' | 'sms' | null>(null);
   const [sent, setSent] = useState(false);
+  const [sentMessage, setSentMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
@@ -54,12 +55,12 @@ export default function OrdersPage() {
         body: JSON.stringify({ method }),
       });
 
-      if (!res.ok) throw new Error('Failed to send order');
-
+      const data = await res.json();
+      setSentMessage(data.message);
       setSent(true);
       setTimeout(() => setSent(false), 4000);
     } catch (err) {
-      alert('Failed to send order. Check console.');
+      alert(err instanceof Error ? err.message : 'Failed to send order');
       console.error(err);
     } finally {
       setSending(null);
@@ -153,8 +154,8 @@ export default function OrdersPage() {
 
             {sent && (
               <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#10b981] text-white px-8 py-4 rounded-2xl shadow-2xl font-bold animate-in zoom-in slide-in-from-bottom-10 z-50 flex items-center gap-3">
-                <CheckCircle2 className="h-6 w-6" />
-                Order sent to supplier
+                <CheckCircle2 className="h-6 w-6 shrink-0" />
+                {sentMessage}
               </div>
             )}
           </>

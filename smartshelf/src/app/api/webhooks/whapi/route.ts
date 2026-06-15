@@ -4,6 +4,10 @@ import { generateResponse } from '@/lib/rag';
 const WHAPI_BASE_URL = process.env.WHAPI_BASE_URL || 'https://gate.whapi.cloud';
 const WHAPI_API_KEY = process.env.WHAPI_API_KEY || '';
 
+export async function GET() {
+  return NextResponse.json({ received: true });
+}
+
 export async function POST(request: Request) {
   const body = await request.json();
 
