@@ -13,7 +13,7 @@ import { UploadButton } from '@/lib/uploadthing';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { token, user, setAuth } = useAuthStore();
+  const { token, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,7 +54,8 @@ export default function SettingsPage() {
         body: JSON.stringify({ name, address, location, avatar }),
       });
       const updated = await res.json();
-      setAuth(token, updated);
+      useAuthStore.setState({ user: updated });
+      localStorage.setItem('user', JSON.stringify(updated));
       setSaved(true);
       setTimeout(() => {
         setSaved(false);

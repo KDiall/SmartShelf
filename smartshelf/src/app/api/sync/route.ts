@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         quantity: sale.quantity,
         soldAt: new Date(sale.soldAt),
         synced: true,
+        userId: sale.userId ?? null,
       },
     });
 

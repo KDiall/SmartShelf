@@ -2,7 +2,7 @@
 import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
+import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
@@ -15,7 +15,7 @@ const navItems = [
   { href: '/stock', label: 'Stock', Icon: Pill },
   { href: '/orders', label: 'Orders', Icon: ShoppingCart },
   { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
-  { href: '/more', label: 'More', Icon: MoreHorizontal },
+  { href: '/more', label: 'Reports', Icon: BarChart3 },
   { href: '/settings', label: 'Settings', Icon: Settings },
 ];
 

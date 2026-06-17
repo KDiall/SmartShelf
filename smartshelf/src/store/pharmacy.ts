@@ -9,6 +9,17 @@ function getToken(): string | undefined {
   return localStorage.getItem('token') ?? undefined;
 }
 
+function getUserId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return undefined;
+    return (JSON.parse(raw) as { id: string }).id;
+  } catch {
+    return undefined;
+  }
+}
+
 interface PharmacyStore {
   medicines: Medicine[];
   sales: Sale[];
@@ -54,6 +65,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       quantity,
       soldAt: new Date().toISOString(),
       synced: false,
+      userId: getUserId(),
     };
 
     await idb.pendingSales.put(sale);
@@ -84,6 +96,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
           quantity,
           soldAt: new Date().toISOString(),
           synced: false,
+          userId: getUserId(),
         };
         await idb.pendingSales.put(sale);
 
@@ -151,7 +164,6 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     usePharmacyStore.setState({ isOnline: true });
-    usePharmacyStore.getState().retrySync();
   });
   window.addEventListener('offline', () => {
     usePharmacyStore.setState({ isOnline: false });

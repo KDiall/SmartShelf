@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
+import { idb } from '@/lib/idb';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ function VerifyForm() {
       }
 
       const data = await res.json();
+      await Promise.all([idb.medicines.clear(), idb.sales.clear(), idb.pendingSales.clear()]);
       setAuth(data.token, data.user);
       router.push('/');
     } catch (err) {
