@@ -80,7 +80,7 @@ export default function MedicinesPage() {
           <Button 
             onClick={() => setShowAddModal(true)} 
             size="icon" 
-            className="h-11 w-11 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100"
+            className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
           >
             <Plus className="h-6 w-6" />
           </Button>

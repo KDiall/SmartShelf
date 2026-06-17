@@ -117,7 +117,7 @@ export default function MorePage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-3xl font-black text-[#0284c7]">{topDrugQty}</p>
+              <p className="text-3xl font-black text-primary">{topDrugQty}</p>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-1 truncate">
                 Top: {topDrug}
               </p>
@@ -144,7 +144,7 @@ export default function MorePage() {
               className={cn(
                 'px-4 py-2 rounded-xl text-sm font-bold transition-colors',
                 period === p.value
-                  ? 'bg-[#0284c7] text-white shadow-md'
+                  ? 'bg-primary text-white shadow-md'
                   : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
               )}
             >
@@ -170,8 +170,8 @@ export default function MorePage() {
             <Card className="overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-[#0284c7]/10 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-[#0284c7]" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <h2 className="font-bold text-foreground">Most Sold Products</h2>
@@ -197,7 +197,7 @@ export default function MorePage() {
                         fontSize: '0.875rem',
                       }}
                     />
-                    <Bar dataKey="quantity" fill="#0284c7" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="quantity" fill="#14b8a6" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -217,7 +217,7 @@ export default function MorePage() {
                         <span className="text-sm font-bold text-muted-foreground w-6">{i + 1}.</span>
                         <span className="text-sm font-medium text-foreground">{item.name}</span>
                       </div>
-                      <span className="text-sm font-bold text-[#0284c7]">{item.quantity} units</span>
+                      <span className="text-sm font-bold text-primary">{item.quantity} units</span>
                     </div>
                   ))}
                 </div>

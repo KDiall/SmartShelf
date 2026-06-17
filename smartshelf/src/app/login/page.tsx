@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
@@ -59,23 +60,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Glow blobs */}
+      <div className="fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-[#2dd4bf]/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center">
-          <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-16 w-16 mx-auto mb-4 rounded-2xl shadow-lg" />
-          <h1 className="text-3xl font-extrabold text-primary" style={{ fontSize: 28 }}>
+          <div className="h-20 w-20 mx-auto mb-5 rounded-3xl shadow-lg bg-gradient-to-br from-primary to-[#2dd4bf] flex items-center justify-center">
+            <span className="text-white text-3xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>S</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-[#0f172a] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
             SmartShelf
           </h1>
-          <p className="text-muted-foreground mt-1" style={{ fontSize: 18 }}>
+          <p className="text-[#64748b] font-medium mt-1">
             Pharmacy Inventory OS
           </p>
         </div>
 
-        <Card>
+        <Card className="glass-card rounded-3xl border-0">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="phone">WhatsApp Number</Label>
+                <Label htmlFor="phone" className="text-[#64748b] font-semibold text-sm">WhatsApp Number</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -83,28 +90,28 @@ export default function LoginPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="text-lg"
+                  className="text-lg rounded-xl border-[rgba(15,23,42,0.1)] focus:border-primary"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#94a3b8] font-medium">
                   Enter your WhatsApp number to receive a login code.
                 </p>
               </div>
 
               {error && !otpFallback && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
                 </div>
               )}
 
               {otpFallback && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-amber-800 font-medium">WhatsApp unavailable</p>
-                  <p className="text-xs text-amber-700">Use this OTP code to log in:</p>
-                  <p className="text-3xl font-bold text-center text-amber-900 tracking-[0.3em]">{otpFallback}</p>
-                  <p className="text-xs text-amber-600 text-center">Expires in 5 minutes</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+                  <p className="text-sm text-amber-800 font-bold">WhatsApp unavailable</p>
+                  <p className="text-xs text-amber-700 font-medium">Use this OTP code to log in:</p>
+                  <p className="text-3xl font-black text-center text-amber-900 tracking-[0.3em]">{otpFallback}</p>
+                  <p className="text-xs text-amber-600 text-center font-medium">Expires in 5 minutes</p>
                   <Button
                     onClick={() => router.push(`/verify?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}`)}
-                    className="w-full mt-2"
+                    className="w-full mt-2 rounded-xl h-11 font-bold"
                     size="lg"
                   >
                     Enter OTP
@@ -115,7 +122,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading || !phone}
-                className="w-full"
+                className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
                 size="lg"
               >
                 {loading ? 'Sending...' : 'Send OTP'}
@@ -123,6 +130,10 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        <p className="text-xs text-center text-[#94a3b8] font-medium">
+          Secure login via WhatsApp OTP
+        </p>
       </div>
     </div>
   );

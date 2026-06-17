@@ -230,7 +230,7 @@ export default function BulkSalePage() {
             </Button>
 
             {totalItems > 0 && (
-              <Card className="bg-[#0284c7]/5 border-[#0284c7]/20">
+              <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-foreground">
@@ -242,7 +242,7 @@ export default function BulkSalePage() {
                   <Button
                     onClick={handleSubmit}
                     disabled={saving}
-                    className="h-12 px-8 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100 gap-2 text-base font-bold"
+                    className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 gap-2 text-base font-bold"
                   >
                     {saving ? (
                       <Loader2 className="h-5 w-5 animate-spin" />

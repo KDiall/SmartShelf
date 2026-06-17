@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 href={href}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center h-full gap-0.5 text-xs font-semibold transition-colors',
-                  active ? 'text-primary' : 'text-muted-foreground'
+                  active ? 'text-primary nav-active-pill' : 'text-muted-foreground'
                 )}
               >
                 <Icon className={cn('h-6 w-6', active ? 'text-primary' : 'text-muted-foreground')} />

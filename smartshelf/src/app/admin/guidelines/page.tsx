@@ -123,13 +123,13 @@ export default function GuidelinesPage() {
                     setMessage(`Upload failed: ${error.message}`);
                   }}
                   appearance={{
-                    label: { color: '#0284c7' },
+                    label: { color: '#14b8a6' },
                     button: {
-                      background: '#0284c7',
+                      background: '#14b8a6',
                       color: '#fff',
                     },
                   }}
-                  className="border-2 border-dashed border-sky-100 rounded-xl p-8 hover:border-sky-300 transition-colors"
+                  className="border-2 border-dashed border-primary/20 rounded-xl p-8 hover:border-primary/40 transition-colors"
                 />
 
                 {uploading && (

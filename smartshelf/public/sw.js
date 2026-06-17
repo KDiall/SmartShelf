@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE = `smartshelf-static-${CACHE_VERSION}`;
 const API_CACHE = `smartshelf-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
@@ -69,7 +69,7 @@ self.addEventListener('fetch', (event) => {
     request.destination === 'font' ||
     request.destination === 'image'
   ) {
-    event.respondWith(cacheFirst(request, ASSET_CACHE));
+    event.respondWith(networkFirstWithCache(request, ASSET_CACHE));
     return;
   }
 

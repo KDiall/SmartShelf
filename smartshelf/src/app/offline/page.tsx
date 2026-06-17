@@ -25,7 +25,7 @@ export default function OfflinePage() {
         </Card>
         <button
           onClick={() => window.location.reload()}
-          className="w-full h-12 rounded-xl bg-[#0284c7] text-white font-bold shadow-md hover:bg-[#0284c7]/90 transition-colors"
+          className="w-full h-12 rounded-xl bg-primary text-white font-bold shadow-md hover:bg-primary/90 transition-colors"
         >
           Try Again
         </button>

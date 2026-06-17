@@ -89,7 +89,7 @@ export function MedicineForm({
               }}
               appearance={{
                 button: {
-                  background: '#0284c7',
+                  background: '#14b8a6',
                   borderRadius: '0.75rem',
                   height: '2.5rem',
                   width: '100%',
@@ -104,7 +104,7 @@ export function MedicineForm({
             />
             {uploading && (
               <div className="flex items-center gap-2 text-muted-foreground mt-2">
-                <Loader2 className="h-4 w-4 animate-spin text-[#0284c7]" />
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <span className="text-xs font-medium">Uploading image...</span>
               </div>
             )}
@@ -212,12 +212,12 @@ export function MedicineForm({
         <input
           type="checkbox"
           {...register('isBig5')}
-          className="h-5 w-5 rounded border-gray-300 text-[#0284c7] focus:ring-[#0284c7]"
+          className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
         />
         <span className="text-sm font-medium">Mark as Quick-Sale item (Big 5)</span>
       </label>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full h-11 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100">
+      <Button type="submit" disabled={isSubmitting} className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20">
         {isSubmitting ? 'Saving...' : submitLabel}
       </Button>
     </form>

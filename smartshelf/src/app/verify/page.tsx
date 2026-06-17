@@ -50,23 +50,28 @@ function VerifyForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-[#2dd4bf]/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center">
-          <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-14 w-14 mx-auto mb-3 rounded-2xl shadow-md" />
-          <h1 className="text-3xl font-bold text-primary" style={{ fontSize: 28 }}>
+          <div className="h-20 w-20 mx-auto mb-5 rounded-3xl shadow-lg bg-gradient-to-br from-primary to-[#2dd4bf] flex items-center justify-center">
+            <span className="text-white text-3xl font-black" style={{ fontFamily: 'Manrope, sans-serif' }}>S</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-[#0f172a] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
             Verify OTP
           </h1>
-          <p className="text-muted-foreground mt-1" style={{ fontSize: 18 }}>
+          <p className="text-[#64748b] font-medium mt-1">
             Code sent to {phone}
           </p>
         </div>
 
-        <Card>
+        <Card className="glass-card rounded-3xl border-0">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="code">6-Digit Code</Label>
+                <Label htmlFor="code" className="text-[#64748b] font-semibold text-sm">6-Digit Code</Label>
                 <Input
                   id="code"
                   type="text"
@@ -77,20 +82,20 @@ function VerifyForm() {
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   required
-                  className="text-center text-2xl tracking-[0.5em]"
+                  className="text-center text-2xl tracking-[0.5em] rounded-xl border-[rgba(15,23,42,0.1)] focus:border-primary"
                 />
               </div>
 
               {error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
                 </div>
               )}
 
               <Button
                 type="submit"
                 disabled={loading || code.length !== 6}
-                className="w-full"
+                className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
                 size="lg"
               >
                 {loading ? 'Verifying...' : 'Verify'}

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0F4C81',
+  themeColor: '#14B8A6',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -32,12 +32,16 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+      <body className="min-h-full relative">
+        <div className="glow-top-left" />
+        <div className="glow-bottom-right" />
+        <div className="relative z-10">
+          <AppShell>{children}</AppShell>
+        </div>
       </body>
     </html>
   );

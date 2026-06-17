@@ -17,16 +17,12 @@ export function computeAlerts(
       new Date(med.expiryDate),
       today
     );
-    if (
-      daysToExpiry <= EXPIRY_WARNING_DAYS &&
-      daysToExpiry > 0 &&
-      med.currentStock > 0
-    ) {
+    if (daysToExpiry <= EXPIRY_WARNING_DAYS) {
       alerts.push({
         medicineId: med.id,
         medicineName: med.name,
         type: 'expiry',
-        severity: daysToExpiry <= 0 ? 'critical' : daysToExpiry <= 30 ? 'critical' : 'warning',
+        severity: daysToExpiry <= 30 ? 'critical' : 'warning',
         daysRemaining: daysToExpiry,
         currentStock: med.currentStock,
         estimatedLossLeones: med.currentStock * med.costPerUnit,

@@ -81,7 +81,7 @@ export default function SettingsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-60">
-            <Loader2 className="h-8 w-8 animate-spin text-[#0284c7]" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6">
@@ -107,7 +107,7 @@ export default function SettingsPage() {
                     onUploadError={(error) => alert(`Upload failed: ${error.message}`)}
                     appearance={{
                       button: {
-                        background: '#0284c7',
+                        background: '#14b8a6',
                         borderRadius: '0.75rem',
                         height: '2.5rem',
                         color: '#fff',
@@ -198,7 +198,7 @@ export default function SettingsPage() {
             <Button
               type="submit"
               disabled={saving}
-              className="w-full h-12 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-100 gap-2 text-base font-bold"
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 gap-2 text-base font-bold"
             >
               {saving ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
