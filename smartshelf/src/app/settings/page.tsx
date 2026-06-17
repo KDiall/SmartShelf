@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, Upload, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Save, Upload, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UploadButton } from '@/lib/uploadthing';
 
@@ -38,6 +38,8 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  const logout = useAuthStore((s) => s.logout);
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
@@ -54,7 +56,10 @@ export default function SettingsPage() {
       const updated = await res.json();
       setAuth(token, updated);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => {
+        setSaved(false);
+        router.push('/');
+      }, 1500);
     } catch {
       alert('Failed to save profile');
     } finally {
@@ -209,6 +214,24 @@ export default function SettingsPage() {
                 Profile saved successfully
               </div>
             )}
+            {/* Logout */}
+            <div className="border-t border-border pt-6">
+              <Button
+                variant="ghost"
+                onClick={() => { logout(); router.push('/login'); }}
+                className="w-full justify-start h-auto p-4 bg-destructive/5 hover:bg-destructive/10 rounded-2xl"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                    <LogOut className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-destructive text-lg">Log Out</p>
+                    <p className="text-sm text-muted-foreground">Sign out of SmartShelf</p>
+                  </div>
+                </div>
+              </Button>
+            </div>
           </form>
         )}
       </div>

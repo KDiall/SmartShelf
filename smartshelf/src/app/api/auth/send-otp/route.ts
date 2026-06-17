@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendOtpMessage } from '@/lib/whapi';
+import crypto from 'crypto';
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 999999).toString();
 }
 
 export async function POST(request: Request) {
@@ -32,10 +33,18 @@ export async function POST(request: Request) {
 
   const result = await sendOtpMessage(phone, otp);
 
-  console.log(`[OTP] For ${phone}: ${otp}`);
+  if (!result.sent) {
+    console.error(`[WHAPI FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
+  } else {
+    console.log(`[OTP] For ${phone}: ${otp}`);
+  }
 
   return NextResponse.json({
-    message: result.sent ? 'OTP sent successfully' : 'OTP generated (WhatsApp unavailable — check server logs)',
+    message: result.sent
+      ? 'OTP sent via WhatsApp'
+      : `WhatsApp unavailable: ${result.error || 'unknown error'}`,
     whapiSent: result.sent,
+    whapiError: result.error || null,
+    otpFallback: result.sent ? null : otp,
   });
 }

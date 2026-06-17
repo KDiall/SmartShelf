@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendAccountCreatedMessage } from '@/lib/whapi';
+import crypto from 'crypto';
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 999999).toString();
 }
 
 export async function GET(request: Request) {
@@ -63,10 +64,10 @@ export async function POST(request: Request) {
 
   const result = await sendAccountCreatedMessage(phone, name || null, otp);
 
-  console.log(`[OTP] For new user ${phone}: ${otp}`);
-
   if (!result.sent) {
-    console.error('Failed to send account creation message via Whapi');
+    console.error(`[WHAPI FAIL] Account creation OTP for ${phone}: ${otp} | Error: ${result.error}`);
+  } else {
+    console.log(`[OTP] For new user ${phone}: ${otp}`);
   }
 
   return NextResponse.json({
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
       createdAt: user.createdAt.toISOString(),
     },
     otpSent: result.sent,
+    whapiError: result.error || null,
   }, { status: 201 });
 }
 

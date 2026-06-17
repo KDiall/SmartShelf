@@ -7,7 +7,7 @@ import { AuthGuard } from '@/components/auth-guard';
 import { isToday, startOfWeek, subDays } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Users, LogOut, TrendingUp, TrendingDown, Settings } from 'lucide-react';
+import { Package, Users, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -20,7 +20,6 @@ export default function MorePage() {
   const { medicines, sales, alerts, loadData } = usePharmacyStore();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
-  const logout = useAuthStore((s) => s.logout);
   const [period, setPeriod] = useState<Period>('7d');
 
   useEffect(() => {
@@ -79,10 +78,6 @@ export default function MorePage() {
   );
 
   const topSold = useMemo(() => sortedBySales.slice(0, 10), [sortedBySales]);
-  const leastSold = useMemo(
-    () => [...sortedBySales].reverse().slice(0, 10),
-    [sortedBySales]
-  );
 
   const topDrug = useMemo(() => sortedBySales[0]?.name || 'N/A', [sortedBySales]);
   const topDrugQty = useMemo(() => sortedBySales[0]?.quantity || 0, [sortedBySales]);
@@ -207,46 +202,7 @@ export default function MorePage() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-
-            {/* Least Sold Chart */}
-            {leastSold.length > 0 && (
-              <Card className="overflow-hidden">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                      <TrendingDown className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-foreground">Least Sold Products</h2>
-                      <p className="text-xs text-muted-foreground">Bottom 10 by quantity sold</p>
-                    </div>
-                  </div>
-                  <ResponsiveContainer width="100%" height={Math.max(200, leastSold.length * 40)}>
-                    <BarChart data={leastSold} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={120}
-                        tick={{ fontSize: 12 }}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '0.75rem',
-                          fontSize: '0.875rem',
-                        }}
-                    />
-                    <Bar dataKey="quantity" fill="#f59e0b" radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
+            
             {/* Sales Summary Table */}
             <Card>
               <CardContent className="p-5">
@@ -271,79 +227,45 @@ export default function MorePage() {
         )}
 
         {/* Settings */}
-        <div className="border-t border-border pt-5 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
-            Settings
-          </p>
+          <div className="border-t border-border pt-5 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+              Settings
+            </p>
 
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/medicines')}
-            className="w-full justify-start h-auto p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Package className="h-5 w-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-foreground text-lg">Manage Medicines</p>
-                <p className="text-sm text-muted-foreground">Edit stock, thresholds, and details</p>
-              </div>
-            </div>
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/settings')}
-            className="w-full justify-start h-auto p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Settings className="h-5 w-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-foreground text-lg">Profile Settings</p>
-                <p className="text-sm text-muted-foreground">Edit pharmacy name, address, and photo</p>
-              </div>
-            </div>
-          </Button>
-
-          {user?.role === 'admin' && (
             <Button
               variant="ghost"
-              onClick={() => router.push('/admin/users')}
+              onClick={() => router.push('/medicines')}
               className="w-full justify-start h-auto p-4"
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-primary" />
+                  <Package className="h-5 w-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-foreground text-lg">Manage Users</p>
-                  <p className="text-sm text-muted-foreground">Add or remove staff accounts</p>
+                  <p className="font-semibold text-foreground text-lg">Manage Medicines</p>
+                  <p className="text-sm text-muted-foreground">Edit stock, thresholds, and details</p>
                 </div>
               </div>
             </Button>
-          )}
 
-          <div className="border-t border-border my-3" />
-
-          <Button
-            variant="ghost"
-            onClick={() => { logout(); router.push('/login'); }}
-            className="w-full justify-start h-auto p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-                <LogOut className="h-5 w-5 text-destructive" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-destructive text-lg">Log Out</p>
-                <p className="text-sm text-muted-foreground">Sign out of SmartShelf</p>
-              </div>
-            </div>
-          </Button>
-        </div>
+            {user?.role === 'admin' && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/admin/users')}
+                className="w-full justify-start h-auto p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-foreground text-lg">Manage Users</p>
+                    <p className="text-sm text-muted-foreground">Add or remove staff accounts</p>
+                  </div>
+                </div>
+              </Button>
+            )}
+          </div>
 
         <p className="text-xs text-center text-muted-foreground pt-2">
           SmartShelf v0.1.0

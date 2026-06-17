@@ -1,24 +1,31 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `smartshelf-static-${CACHE_VERSION}`;
 const API_CACHE = `smartshelf-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
 
-const STATIC_URLS = [
+const PRECACHE_URLS = [
   '/',
   '/login',
   '/verify',
-  '/medicines',
   '/stock',
   '/orders',
   '/restock',
   '/risks',
   '/more',
-  '/admin/users',
-  '/admin/guidelines',
+  '/settings',
+  '/medicines',
+  '/bulk-sale',
+  '/offline',
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => {
+      return cache.addAll(PRECACHE_URLS).catch((err) => {
+        console.warn('SW: precache failed for some URLs', err);
+      });
+    }).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -29,14 +36,27 @@ self.addEventListener('activate', (event) => {
           .filter((k) => k !== STATIC_CACHE && k !== API_CACHE && k !== ASSET_CACHE)
           .map((k) => caches.delete(k))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) return;
+
+  if (request.method !== 'GET') {
+    if (url.pathname.startsWith('/api/')) {
+      event.respondWith(networkOnly(request));
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/auth/send-otp' || url.pathname === '/api/auth/verify-otp') {
+    event.respondWith(networkOnly(request));
+    return;
+  }
 
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstWithCache(request, API_CACHE));
@@ -64,7 +84,6 @@ self.addEventListener('fetch', (event) => {
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
   if (cached) return cached;
-
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -88,6 +107,20 @@ async function networkFirstWithCache(request, cacheName) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
+    if (request.mode === 'navigate') {
+      return caches.match('/offline');
+    }
+    return new Response(JSON.stringify({ error: 'Offline' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function networkOnly(request) {
+  try {
+    return await fetch(request);
+  } catch {
     return new Response(JSON.stringify({ error: 'Offline' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' },

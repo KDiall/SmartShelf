@@ -10,7 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { isToday, format } from 'date-fns';
-import { ShoppingCart, CheckCircle2, AlertCircle, Loader2, Pill } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ShoppingCart, CheckCircle2, AlertCircle, Clock, Loader2, Pill, ShoppingBag } from 'lucide-react';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -21,7 +22,7 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { medicines, sales, alerts, isLoaded, loadData } = usePharmacyStore();
+  const { medicines, sales, alerts, healthScore, isLoaded, loadData } = usePharmacyStore();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   useSync();
@@ -39,6 +40,11 @@ export default function HomePage() {
     () => alerts.filter((a) => a.type === 'stockout').length,
     [alerts]
   );
+  const expiryCount = useMemo(
+    () => alerts.filter((a) => a.type === 'expiry').length,
+    [alerts]
+  );
+  const totalAlerts = lowStockCount + expiryCount;
 
   return (
     <AuthGuard>
@@ -56,8 +62,12 @@ export default function HomePage() {
               </h1>
               <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest mt-2">{format(new Date(), 'EEEE, MMMM d')}</p>
             </div>
-            <div className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-sky-100 flex items-center justify-center border border-sky-50">
-               <span className="text-xl font-black text-[#0284c7]">{(user?.name || 'P')[0]}</span>
+            <div className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-sky-100 flex items-center justify-center border border-sky-50 overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xl font-black text-[#0284c7]">{(user?.name || 'P')[0]}</span>
+              )}
             </div>
           </div>
 
@@ -80,33 +90,55 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <div className="space-y-6">
-              {lowStockCount > 0 ? (
+            <div className="space-y-3">
+              {lowStockCount > 0 && (
                 <Button
                   variant="outline"
                   onClick={() => router.push('/orders')}
-                  className="w-full h-auto p-6 bg-white border-none shadow-xl shadow-amber-100/50 hover:shadow-amber-200/50 hover:bg-amber-50 group transition-all rounded-3xl"
+                  className="w-full h-auto p-5 bg-white border-none shadow-xl shadow-amber-100/50 hover:shadow-amber-200/50 hover:bg-amber-50 group transition-all rounded-3xl"
                 >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <AlertCircle className="h-7 w-7 text-amber-600" />
+                  <div className="flex items-center text-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                      <AlertCircle className="h-6 w-6 text-amber-600" />
                     </div>
-                    <div>
-                      <p className="font-black text-[#020617] text-lg uppercase tracking-tight leading-none">
+                    <div className="text-left">
+                      <p className="font-black text-[#020617] uppercase tracking-tight leading-none">
                         {lowStockCount} Low Stock
                       </p>
                       <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mt-1">Tap to Restock</p>
                     </div>
                   </div>
                 </Button>
-              ) : (
-                <Card className="bg-white border-none shadow-xl shadow-emerald-100/50 rounded-3xl">
-                  <CardContent className="p-6 text-center">
-                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+              )}
+
+              {expiryCount > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/risks')}
+                  className="w-full h-auto p-5 bg-white border-none shadow-xl shadow-red-100/50 hover:shadow-red-200/50 hover:bg-red-50 group transition-all rounded-3xl"
+                >
+                  <div className="flex items-center text-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-red-100 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                      <Clock className="h-6 w-6 text-red-500" />
                     </div>
-                    <p className="font-black text-[#020617] uppercase tracking-tight">Stock Healthy</p>
-                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">All thresholds met</p>
+                    <div className="text-left">
+                      <p className="font-black text-[#020617] uppercase tracking-tight leading-none">
+                        {expiryCount} Expiring Soon
+                      </p>
+                      <p className="text-xs font-bold text-red-500 uppercase tracking-widest mt-1">View Details</p>
+                    </div>
+                  </div>
+                </Button>
+              )}
+
+              {totalAlerts === 0 && (
+                <Card className="bg-white border-none shadow-xl shadow-emerald-100/50 rounded-3xl">
+                  <CardContent className="p-5 text-center">
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-2">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                    </div>
+                    <p className="font-black text-[#020617] uppercase tracking-tight">All Healthy</p>
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">No alerts</p>
                   </CardContent>
                 </Card>
               )}
@@ -114,7 +146,10 @@ export default function HomePage() {
               <Card className="bg-white border-none shadow-xl shadow-sky-50 rounded-3xl">
                 <CardContent className="p-6 text-center">
                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Health Score</p>
-                   <p className="text-3xl font-black text-[#0284c7]">98%</p>
+                   <p className={cn(
+                     'text-3xl font-black',
+                     healthScore > 80 ? 'text-[#10b981]' : healthScore > 50 ? 'text-[#f59e0b]' : 'text-[#ef4444]'
+                   )}>{healthScore}%</p>
                 </CardContent>
               </Card>
             </div>
@@ -128,7 +163,18 @@ export default function HomePage() {
                 </div>
                 <h2 className="text-[#020617] font-black text-xl uppercase tracking-tight">Quick Sale</h2>
               </div>
-              <Badge className="bg-white text-[#0284c7] border-sky-100 font-black text-[10px] px-3 py-1 uppercase tracking-widest shadow-sm">1-Tap Log</Badge>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-white text-[#0284c7] border-sky-100 font-black text-[10px] px-3 py-1 uppercase tracking-widest shadow-sm">1-Tap Log</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/bulk-sale')}
+                  className="h-8 rounded-xl border-sky-100 text-[#0284c7] font-bold text-[10px] uppercase tracking-widest gap-1 shadow-sm"
+                >
+                  <ShoppingBag className="h-3 w-3" />
+                  Bulk
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {medicines

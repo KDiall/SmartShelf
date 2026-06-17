@@ -19,6 +19,7 @@ interface PharmacyStore {
   syncStatus: SyncStatus;
   loadData: () => Promise<void>;
   recordSale: (medicineId: string, quantity?: number) => Promise<void>;
+  recordBulkSales: (items: { medicineId: string; quantity: number }[]) => Promise<void>;
   addMedicine: (medicine: Medicine) => Promise<void>;
   updateMedicine: (medicine: Medicine) => Promise<void>;
   deleteMedicine: (id: string) => Promise<void>;
@@ -66,6 +67,37 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     await idb.medicines.put(updated);
+
+    await get().loadData();
+
+    if (navigator.onLine) {
+      get().retrySync();
+    }
+  },
+
+  recordBulkSales: async (items) => {
+    await idb.transaction('rw', idb.pendingSales, idb.medicines, async () => {
+      for (const { medicineId, quantity } of items) {
+        const sale: Sale = {
+          id: crypto.randomUUID(),
+          medicineId,
+          quantity,
+          soldAt: new Date().toISOString(),
+          synced: false,
+        };
+        await idb.pendingSales.put(sale);
+
+        const medicine = await idb.medicines.get(medicineId);
+        if (medicine) {
+          const updated: Medicine = {
+            ...medicine,
+            currentStock: Math.max(0, medicine.currentStock - quantity),
+            updatedAt: new Date().toISOString(),
+          };
+          await idb.medicines.put(updated);
+        }
+      }
+    });
 
     await get().loadData();
 

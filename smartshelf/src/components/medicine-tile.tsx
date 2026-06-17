@@ -16,6 +16,7 @@ export function MedicineTile({ medicine }: Props) {
   const recordSale = usePharmacyStore((s) => s.recordSale);
   const status = getStockStatus(medicine.currentStock, medicine.reorderThreshold);
   const [toast, setToast] = useState(false);
+  const [qty, setQty] = useState(1);
 
   const statusConfig: Record<string, { color: string; label: string }> = {
     ok: { color: 'bg-success text-white', label: 'In Stock' },
@@ -29,8 +30,9 @@ export function MedicineTile({ medicine }: Props) {
 
   async function handleSale(e: React.MouseEvent) {
     e.stopPropagation();
-    await recordSale(medicine.id);
+    await recordSale(medicine.id, qty);
     setToast(true);
+    setQty(1);
     setTimeout(() => setToast(false), 1500);
   }
 
@@ -76,12 +78,39 @@ export function MedicineTile({ medicine }: Props) {
           />
         </div>
         
-        <Button 
-          onClick={handleSale} 
-          className="w-full h-11 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-50 font-bold"
-        >
-          LOG SALE
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-secondary/50 rounded-xl overflow-hidden">
+            <button
+              onClick={(e) => { e.stopPropagation(); setQty(Math.max(1, qty - 1)); }}
+              className="h-10 w-10 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-secondary/80 transition-colors"
+            >
+              −
+            </button>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={qty}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v) && v > 0) setQty(v);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="h-10 w-14 text-center text-base font-bold text-foreground bg-transparent outline-none tabular-nums"
+            />
+            <button
+              onClick={(e) => { e.stopPropagation(); setQty(qty + 1); }}
+              className="h-10 w-10 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-secondary/80 transition-colors"
+            >
+              +
+            </button>
+          </div>
+          <Button
+            onClick={handleSale}
+            className="flex-1 h-14 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 shadow-md shadow-sky-50 font-bold text-base"
+          >
+            LOG SALE
+          </Button>
+        </div>
       </CardContent>
       {toast && (
         <div className="absolute inset-0 bg-[#10b981]/90 backdrop-blur-sm flex flex-col items-center justify-center text-white animate-in fade-in zoom-in duration-200 z-20">

@@ -4,7 +4,7 @@ import type { Medicine } from '@/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId') || request.headers.get('x-user-id');
 
   const where = userId ? { userId } : {};
   const medicines = await prisma.medicine.findMany({ where });

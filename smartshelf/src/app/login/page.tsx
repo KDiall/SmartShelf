@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otpFallback, setOtpFallback] = useState('');
   const router = useRouter();
   const { isAuthenticated, loadFromStorage } = useAuthStore();
 
@@ -28,6 +29,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setOtpFallback('');
 
     try {
       const res = await fetch('/api/auth/send-otp', {
@@ -36,12 +38,19 @@ export default function LoginPage() {
         body: JSON.stringify({ phone }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'Failed to send OTP' }));
         throw new Error(data.error || 'Failed to send OTP');
       }
 
-      router.push(`/verify?phone=${encodeURIComponent(phone)}`);
+      if (data.otpFallback) {
+        setOtpFallback(data.otpFallback);
+        setError(data.whapiError || 'WhatsApp unavailable');
+        return;
+      }
+
+      router.push(`/verify?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -81,9 +90,25 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {error && (
+              {error && !otpFallback && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
                   <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              {otpFallback && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+                  <p className="text-sm text-amber-800 font-medium">WhatsApp unavailable</p>
+                  <p className="text-xs text-amber-700">Use this OTP code to log in:</p>
+                  <p className="text-3xl font-bold text-center text-amber-900 tracking-[0.3em]">{otpFallback}</p>
+                  <p className="text-xs text-amber-600 text-center">Expires in 5 minutes</p>
+                  <Button
+                    onClick={() => router.push(`/verify?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}`)}
+                    className="w-full mt-2"
+                    size="lg"
+                  >
+                    Enter OTP
+                  </Button>
                 </div>
               )}
 

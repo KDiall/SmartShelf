@@ -7,7 +7,7 @@ import { computeRestockItems } from '@/lib/restock';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, MessageCircle, Smartphone, Plus, ShoppingCart, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { Search, MessageCircle, Plus, ShoppingCart, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -29,12 +29,11 @@ interface OrderItem {
 export default function OrdersPage() {
   const { medicines, loadData, addMedicine } = usePharmacyStore();
   const token = useAuthStore((s) => s.token);
-  const [sending, setSending] = useState<'whatsapp' | 'sms' | null>(null);
+  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentMessage, setSentMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderMethod, setOrderMethod] = useState<'whatsapp' | 'sms'>('whatsapp');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,8 +61,7 @@ export default function OrdersPage() {
     [availableMeds, searchQuery]
   );
 
-  function handleOpenOrder(method: 'whatsapp' | 'sms') {
-    setOrderMethod(method);
+  function handleOpenOrder() {
     setOrderItems(
       restockItems.map((item) => ({
         medicineId: item.medicineId,
@@ -103,7 +101,7 @@ export default function OrdersPage() {
   }
 
   async function handleSendOrder() {
-    setSending(orderMethod);
+    setSending(true);
     setShowOrderModal(false);
     setSent(false);
     try {
@@ -114,7 +112,7 @@ export default function OrdersPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          method: orderMethod,
+          method: 'whatsapp',
           items: orderItems.map((item) => ({
             name: item.name,
             quantity: item.quantity,
@@ -131,7 +129,7 @@ export default function OrdersPage() {
       alert(err instanceof Error ? err.message : 'Failed to send order');
       console.error(err);
     } finally {
-      setSending(null);
+      setSending(false);
     }
   }
 
@@ -217,22 +215,14 @@ export default function OrdersPage() {
               <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-center">
                 Automated Procurement
               </p>
-              <div className="flex gap-4">
+              <div className="flex justify-center">
                 <Button
-                  onClick={() => handleOpenOrder('whatsapp')}
-                  disabled={sending !== null}
-                  className="flex-1 h-14 bg-[#10b981] hover:bg-[#10b981]/90 rounded-2xl shadow-lg shadow-emerald-50 text-white font-bold text-lg gap-2 border-none"
+                  onClick={handleOpenOrder}
+                  disabled={sending}
+                  className="w-full max-w-sm h-16 bg-[#10b981] hover:bg-[#10b981]/90 rounded-2xl shadow-lg shadow-emerald-50 text-white font-bold text-xl gap-3 border-none"
                 >
-                  <MessageCircle className="h-6 w-6" />
-                  {sending === 'whatsapp' ? 'Sending...' : 'WhatsApp'}
-                </Button>
-                <Button
-                  onClick={() => handleOpenOrder('sms')}
-                  disabled={sending !== null}
-                  className="flex-1 h-14 bg-[#020617] hover:bg-[#020617]/90 rounded-2xl shadow-lg shadow-slate-100 text-white font-bold text-lg gap-2 border-none"
-                >
-                  <Smartphone className="h-6 w-6" />
-                  {sending === 'sms' ? 'Sending...' : 'SMS'}
+                  <MessageCircle className="h-7 w-7" />
+                  {sending ? 'Sending...' : 'Send Order via WhatsApp'}
                 </Button>
               </div>
             </div>
@@ -252,7 +242,7 @@ export default function OrdersPage() {
             <DialogHeader>
               <DialogTitle>Review Order</DialogTitle>
               <DialogDescription>
-                Review and edit items before sending via {orderMethod === 'whatsapp' ? 'WhatsApp' : 'SMS'}.
+                Review and edit items before sending via WhatsApp.
               </DialogDescription>
             </DialogHeader>
 
@@ -361,14 +351,9 @@ export default function OrdersPage() {
               <Button
                 onClick={handleSendOrder}
                 disabled={orderItems.length === 0}
-                className={cn(
-                  'flex-1 h-11 rounded-xl font-bold gap-2',
-                  orderMethod === 'whatsapp'
-                    ? 'bg-[#10b981] hover:bg-[#10b981]/90'
-                    : 'bg-[#020617] hover:bg-[#020617]/90'
-                )}
+                className="flex-1 h-11 rounded-xl font-bold gap-2 bg-[#10b981] hover:bg-[#10b981]/90"
               >
-                {orderMethod === 'whatsapp' ? <MessageCircle className="h-5 w-5" /> : <Smartphone className="h-5 w-5" />}
+                <MessageCircle className="h-5 w-5" />
                 Send Order ({orderItems.length} items)
               </Button>
             </div>

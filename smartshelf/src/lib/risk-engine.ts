@@ -1,7 +1,7 @@
 import { differenceInDays, subDays } from 'date-fns';
 import type { Medicine, Sale, StockAlert } from '@/types';
 
-const EXPIRY_WARNING_DAYS = 30;
+const EXPIRY_WARNING_DAYS = 90;
 const LOW_STOCK_MULTIPLIER = 2;
 
 export function computeAlerts(
@@ -26,7 +26,7 @@ export function computeAlerts(
         medicineId: med.id,
         medicineName: med.name,
         type: 'expiry',
-        severity: daysToExpiry <= 7 ? 'critical' : 'warning',
+        severity: daysToExpiry <= 0 ? 'critical' : daysToExpiry <= 30 ? 'critical' : 'warning',
         daysRemaining: daysToExpiry,
         currentStock: med.currentStock,
         estimatedLossLeones: med.currentStock * med.costPerUnit,

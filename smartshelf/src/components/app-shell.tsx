@@ -2,7 +2,7 @@
 import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, LogOut, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
+import { Home, Pill, ShoppingCart, MoreHorizontal, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
@@ -176,17 +176,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <p className="text-xs text-white/50">{user.phone}</p>
                       </div>
                     )}
-                    <button
-                      onClick={() => {
-                        logout();
-                        router.push('/login');
-                      }}
-                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                      style={{ fontSize: 18 }}
-                    >
-                      <LogOut className="h-5 w-5" />
-                      Log Out
-                    </button>
                   </div>
                 </SheetContent>
               </Sheet>
