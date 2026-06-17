@@ -1,0 +1,566 @@
+SMARTSHELF UI/UX REDESIGN SPECIFICATION
+Version: Hackathon MVP
+Product: SmartShelf
+Theme: The Operating System for Community Pharmacies
+
+========================================================
+DESIGN GOAL
+========================================================
+
+Redesign SmartShelf as a premium healthcare SaaS platform.
+
+DO NOT design it like:
+
+- A hospital website
+- A pharmacy e-commerce store
+- A medicine catalog
+- A generic admin dashboard
+- A typical AI-generated blue dashboard
+
+Instead design it as:
+
+"The Inventory Command Center for Community Pharmacies"
+
+The product should feel like:
+
+- Stripe Dashboard
+- Linear
+- Vercel
+- Notion
+- Modern HealthTech SaaS
+
+combined with:
+
+- Pharmacy operations
+- Inventory intelligence
+- Healthcare trust
+- African startup innovation
+
+The visual impression should be:
+
+Professional.
+Modern.
+Premium.
+Fast.
+Trustworthy.
+Operational.
+
+========================================================
+BRAND PERSONALITY
+========================================================
+
+SmartShelf should feel:
+
+- Reliable
+- Intelligent
+- Clean
+- Fast
+- Calm
+- Helpful
+
+Avoid:
+
+- Corporate coldness
+- Generic hospital visuals
+- Overly playful UI
+- Heavy enterprise styling
+
+========================================================
+COLOR SYSTEM
+========================================================
+
+PRIMARY
+
+Teal Healthcare
+
+#14B8A6
+
+SECONDARY
+
+Deep Teal
+
+#0F766E
+
+SUCCESS
+
+#22C55E
+
+WARNING
+
+#F59E0B
+
+DANGER
+
+#EF4444
+
+INFO
+
+#3B82F6
+
+BACKGROUND
+
+#F7FAFA
+
+SURFACE
+
+rgba(255,255,255,0.75)
+
+TEXT PRIMARY
+
+#0F172A
+
+TEXT SECONDARY
+
+#64748B
+
+BORDER
+
+rgba(15,23,42,0.08)
+
+========================================================
+BACKGROUND STYLE
+========================================================
+
+Use a soft medical-tech atmosphere.
+
+Avoid flat white backgrounds.
+
+Use subtle radial gradients.
+
+Example:
+
+Top Left Glow:
+#CCFBF1
+
+Bottom Right Glow:
+#DBEAFE
+
+Add large blurred gradient blobs behind content.
+
+Very subtle.
+
+Premium.
+
+========================================================
+TYPOGRAPHY
+========================================================
+
+Headings:
+
+Manrope
+
+Fallback:
+
+Plus Jakarta Sans
+
+Body:
+
+Inter
+
+Heading weights:
+
+700
+800
+
+Body:
+
+400
+500
+
+========================================================
+GLOBAL DESIGN LANGUAGE
+========================================================
+
+Use:
+
+- Rounded corners
+- Soft shadows
+- Frosted glass cards
+- Clean spacing
+- Large visual hierarchy
+
+Card Radius:
+
+24px
+
+Button Radius:
+
+16px
+
+Input Radius:
+
+14px
+
+========================================================
+GLASSMORPHISM STYLE
+========================================================
+
+Cards should use:
+
+background:
+rgba(255,255,255,0.75)
+
+backdrop-filter:
+blur(20px)
+
+border:
+1px solid rgba(255,255,255,0.5)
+
+shadow:
+0 8px 30px rgba(0,0,0,0.08)
+
+========================================================
+MAIN DASHBOARD
+========================================================
+
+This is the most important screen.
+
+Layout:
+
+Desktop:
+2-column grid
+
+Mobile:
+single column
+
+========================================================
+HEADER
+========================================================
+
+Left:
+
+SmartShelf Logo
+
+Center:
+
+Current Date
+
+Right:
+
+User Avatar
+
+Greeting:
+
+Good Morning, Mariama 👋
+
+Inventory Health Today
+
+========================================================
+HERO CARD
+========================================================
+
+Large hero card at the top.
+
+Height:
+280px
+
+Contains:
+
+Inventory Health Score
+
+Example:
+
+86 / 100
+
+Status:
+
+GOOD
+
+Display:
+
+Circular progress ring
+
+Color changes:
+
+Green
+Amber
+Red
+
+This should be the visual centerpiece.
+
+========================================================
+INVENTORY RISK SUMMARY
+========================================================
+
+Directly below Hero.
+
+Example:
+
+⚠ 2 Medicines At Risk
+
+1 Stockout Risk
+1 Expiry Risk
+
+Use beautiful summary cards.
+
+NOT tables.
+
+========================================================
+BIG 5 QUICK LOG
+========================================================
+
+This is the star feature.
+
+Most visible section after Hero.
+
+Display:
+
+5 large medicine tiles.
+
+Default:
+
+Coartem
+Paracetamol
+Amoxicillin
+Metronidazole
+ORS
+
+Each tile shows:
+
+Medicine Name
+Current Stock
+
+Example:
+
+COARTEM
+
+Stock: 23
+
+Large plus icon
+
+Tap action:
+
+Logs sale instantly.
+
+========================================================
+MEDICINE TILE DESIGN
+========================================================
+
+Tile Size:
+
+Large
+
+Rounded:
+
+24px
+
+Gradient backgrounds.
+
+Examples:
+
+Coartem
+
+#14B8A6 → #2DD4BF
+
+Paracetamol
+
+#3B82F6 → #60A5FA
+
+Amoxicillin
+
+#22C55E → #4ADE80
+
+Metronidazole
+
+#0EA5E9 → #38BDF8
+
+ORS
+
+#A855F7 → #C084FC
+
+Each tile:
+
+Animated hover
+Animated tap
+
+========================================================
+INVENTORY RISKS PAGE
+========================================================
+
+Rename all "Alerts" sections.
+
+New name:
+
+Inventory Risks
+
+Display risks as cards.
+
+========================================================
+STOCKOUT RISK CARD
+========================================================
+
+Example:
+
+⚠ Stockout Risk
+
+Coartem
+
+4 Days Remaining
+
+Risk Level:
+High
+
+Use warning colors.
+
+========================================================
+EXPIRY RISK CARD
+========================================================
+
+Example:
+
+⚠ Expiry Risk
+
+Amoxicillin
+
+15 Packs
+
+Potential Loss:
+Le 750
+
+Use amber styling.
+
+========================================================
+RESTOCK PAGE
+========================================================
+
+Title:
+
+Suggested Reorders
+
+Show:
+
+Coartem × 50
+
+Paracetamol × 100
+
+Metronidazole × 30
+
+Large WhatsApp button.
+
+Green.
+
+Prominent.
+
+========================================================
+WHATSAPP BUTTON
+========================================================
+
+Color:
+
+#25D366
+
+Text:
+
+Generate WhatsApp Order
+
+Include WhatsApp icon.
+
+========================================================
+ICONS
+========================================================
+
+Use Lucide React.
+
+Preferred icons:
+
+Package
+Pill
+Activity
+ShieldCheck
+AlertTriangle
+HeartPulse
+ClipboardList
+TrendingUp
+
+========================================================
+ANIMATIONS
+========================================================
+
+Subtle only.
+
+Inventory Health:
+count-up animation
+
+Medicine tile:
+scale down on tap
+
+Cards:
+fade-in
+
+Buttons:
+smooth hover
+
+Duration:
+
+200ms
+
+========================================================
+FLOATING BRAND ELEMENT
+========================================================
+
+Create a giant translucent capsule shape.
+
+Place behind dashboard.
+
+Style:
+
+Gradient:
+#14B8A6 → #3B82F6
+
+Opacity:
+15%
+
+Blur:
+100px
+
+Purpose:
+
+Create a premium health-tech feel.
+
+========================================================
+MOBILE EXPERIENCE
+========================================================
+
+Priority: Mobile First
+
+Target Devices:
+
+Android
+iPhone
+
+The product should feel like:
+
+WhatsApp Business
++
+Stripe Dashboard
++
+Pharmacy Operations
+
+========================================================
+DO NOT USE
+========================================================
+
+Do NOT use:
+
+- Generic AI dashboard blue
+- Hospital website layouts
+- Medicine e-commerce layouts
+- Heavy shadows
+- Dark mode by default
+- Overly complex charts
+- Corporate enterprise styling
+- Excessive gradients
+
+========================================================
+FINAL DESIGN OBJECTIVE
+========================================================
+
+When judges see SmartShelf for the first time, it should look like:
+
+"A real venture-backed health-tech startup solving medicine availability problems across Africa."
+
+Not:
+
+"A hackathon project."
+
+The design should feel premium, modern, trustworthy, operational, and memorable.
