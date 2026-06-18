@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendOtpMessage } from '@/lib/whapi';
+import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
 function generateOtp(): string {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
   }
 
-  phone = phone.replace(/[^0-9]/g, '');
+  phone = normalizePhone(phone);
 
   const user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {

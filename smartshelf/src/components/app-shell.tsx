@@ -2,7 +2,7 @@
 import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings, Store } from 'lucide-react';
+import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings, Store, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
@@ -10,13 +10,25 @@ import { useSync } from '@/hooks/use-sync';
 import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/', label: 'Home', Icon: Home },
-  { href: '/stock', label: 'Stock', Icon: Pill },
-  { href: '/orders', label: 'Orders', Icon: ShoppingCart },
-  { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
+type NavItem = {
+  href: string;
+  label: string;
+  Icon: typeof Home;
+  adminOnly?: boolean;
+  superAdminOnly?: boolean;
+  tenantOnly?: boolean;
+};
+
+// tenantOnly: inventory/sales features hidden from the platform-only super admin.
+// superAdminOnly: platform management features only the super admin sees.
+const navItems: NavItem[] = [
+  { href: '/', label: 'Home', Icon: Home, tenantOnly: true },
+  { href: '/stock', label: 'Stock', Icon: Pill, tenantOnly: true },
+  { href: '/orders', label: 'Orders', Icon: ShoppingCart, tenantOnly: true },
   { href: '/admin/pharmacies', label: 'Pharmacies', Icon: Store, superAdminOnly: true },
-  { href: '/more', label: 'Reports', Icon: BarChart3 },
+  { href: '/admin/users', label: 'Users', Icon: Users, superAdminOnly: true },
+  { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
+  { href: '/more', label: 'Reports', Icon: BarChart3, tenantOnly: true },
   { href: '/settings', label: 'Settings', Icon: Settings },
 ];
 
@@ -40,6 +52,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   usePwa();
   useSync();
 
+  // Baseline must match server's pre-rendered HTML exactly
+  const isAdmin = mounted && (user?.role === 'admin' || user?.role === 'super_admin');
+  const isSuperAdmin = mounted && user?.role === 'super_admin';
+
+  // The super admin is platform-only: keep them out of tenant (inventory/sales) pages.
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const allowed = pathname.startsWith('/admin') || pathname === '/settings';
+    if (!allowed) {
+      router.replace('/admin/pharmacies');
+    }
+  }, [isSuperAdmin, pathname, router]);
+
+  const visibleNav = navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.superAdminOnly && !isSuperAdmin) return false;
+    if (item.tenantOnly && isSuperAdmin) return false;
+    return true;
+  });
+
   const isAuthPage = pathname === '/login' || pathname === '/verify';
 
   if (isAuthPage) {
@@ -49,9 +81,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   function isActive(href: string) {
     return href === '/' ? pathname === '/' : pathname.startsWith(href);
   }
-
-  // Baseline must match server's pre-rendered HTML exactly
-  const isAdmin = mounted && (user?.role === 'admin' || user?.role === 'super_admin');
 
   return (
     <div className="min-h-screen flex">
@@ -83,9 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-2">
-          {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
-            if (adminOnly && !isAdmin) return null;
-            if (superAdminOnly && user?.role !== 'super_admin') return null;
+          {visibleNav.map(({ href, label, Icon }) => {
             const active = isActive(href);
             return (
               <Link
@@ -154,9 +181,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
 
                   <nav className="py-4 space-y-1 px-3">
-                    {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
-                      if (adminOnly && !isAdmin) return null;
-                      if (superAdminOnly && user?.role !== 'super_admin') return null;
+                    {visibleNav.map(({ href, label, Icon }) => {
                       const active = isActive(href);
                       return (
                         <SheetClose key={href} render={<Link href={href} />} className={cn(
@@ -201,9 +226,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-50 bottom-nav-shadow safe-area-bottom">
         <div className="flex items-center h-16">
-          {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
-            if (adminOnly && !isAdmin) return null;
-            if (superAdminOnly && user?.role !== 'super_admin') return null;
+          {visibleNav.map(({ href, label, Icon }) => {
             const active = isActive(href);
             return (
               <Link

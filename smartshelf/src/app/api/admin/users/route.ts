@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendAccountCreatedMessage } from '@/lib/whapi';
+import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
 function generateOtp(): string {
@@ -40,19 +41,25 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { name, phone, role, pharmacyId: bodyPharmacyId } = await request.json();
+  const { name, phone: rawPhone, role, pharmacyId: bodyPharmacyId } = await request.json();
 
-  if (!phone || typeof phone !== 'string') {
+  const currentRole = request.headers.get('x-user-role');
+  const currentPharmacyId = request.headers.get('x-user-pharmacy-id');
+  const currentUserId = request.headers.get('x-user-id');
+
+  if (!rawPhone || typeof rawPhone !== 'string') {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+  }
+
+  const phone = normalizePhone(rawPhone);
+  if (!phone) {
+    return NextResponse.json({ error: 'A valid phone number is required' }, { status: 400 });
   }
 
   const existing = await prisma.user.findUnique({ where: { phone } });
   if (existing) {
     return NextResponse.json({ error: 'User with this phone already exists' }, { status: 409 });
   }
-
-  const currentRole = request.headers.get('x-user-role');
-  const currentPharmacyId = request.headers.get('x-user-pharmacy-id');
 
   // Pharmacy admins can only create pharmacist users in their own pharmacy
   const userRole = role === 'admin' && currentRole === 'super_admin' ? 'admin' : 'pharmacist';
@@ -61,14 +68,23 @@ export async function POST(request: Request) {
   let pharmacyId: string | null;
   if (currentRole === 'super_admin') {
     pharmacyId = bodyPharmacyId || null;
-    if (userRole === 'admin' && !pharmacyId) {
-      return NextResponse.json({ error: 'Pharmacy is required for admin users' }, { status: 400 });
+    // Every staff member (admin or pharmacist) must belong to a pharmacy,
+    // otherwise they can never log in (verify-otp blocks pharmacy-less staff).
+    if (!pharmacyId) {
+      return NextResponse.json({ error: 'A pharmacy must be selected for this user' }, { status: 400 });
     }
   } else {
     pharmacyId = currentPharmacyId || null;
+    if (!pharmacyId) {
+      return NextResponse.json({ error: 'Your account is not assigned to a pharmacy' }, { status: 400 });
+    }
   }
 
-  const userId = request.headers.get('x-user-id');
+  // Ensure the target pharmacy actually exists before creating the user.
+  const pharmacy = await prisma.pharmacy.findUnique({ where: { id: pharmacyId } });
+  if (!pharmacy) {
+    return NextResponse.json({ error: 'Selected pharmacy does not exist' }, { status: 400 });
+  }
 
   const user = await prisma.user.create({
     data: {
@@ -76,7 +92,7 @@ export async function POST(request: Request) {
       name: name || null,
       role: userRole,
       verified: false,
-      createdBy: userId,
+      createdBy: currentUserId,
       pharmacyId: pharmacyId,
     },
   });

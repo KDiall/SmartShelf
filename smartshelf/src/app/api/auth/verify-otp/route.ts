@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/jwt';
+import { normalizePhone } from '@/lib/phone';
 
 export async function POST(request: Request) {
   let { phone, code } = await request.json();
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Phone and code are required' }, { status: 400 });
   }
 
-  phone = phone.replace(/[^0-9]/g, '');
+  phone = normalizePhone(phone);
 
   const otp = await prisma.otp.findFirst({
     where: {

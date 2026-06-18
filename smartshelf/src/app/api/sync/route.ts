@@ -9,9 +9,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'sales array required' }, { status: 400 });
   }
 
-  const pharmacyId = request.headers.get('x-user-pharmacy-id') || null;
+  const role = request.headers.get('x-user-role');
+  const headerPharmacyId = request.headers.get('x-user-pharmacy-id') || null;
+  const headerUserId = request.headers.get('x-user-id');
 
   for (const sale of sales as Sale[]) {
+    // Tenant users always record sales under their own pharmacy/user.
+    const pharmacyId = role === 'super_admin' ? (sale.pharmacyId ?? null) : headerPharmacyId;
+    const userId = role === 'super_admin' ? (sale.userId ?? headerUserId) : headerUserId;
+
+    // The sale must reference a medicine the caller is allowed to touch.
+    const medicine = await prisma.medicine.findUnique({ where: { id: sale.medicineId } });
+    if (!medicine) continue;
+    if (role !== 'super_admin' && headerPharmacyId && medicine.pharmacyId !== headerPharmacyId) {
+      continue;
+    }
+
+    // Only decrement stock the first time a sale is persisted, so retried syncs
+    // of the same offline sale don't double-count.
+    const existing = await prisma.sale.findUnique({ where: { id: sale.id } });
+
     await prisma.sale.upsert({
       where: { id: sale.id },
       update: {
@@ -24,17 +41,19 @@ export async function POST(request: Request) {
         quantity: sale.quantity,
         soldAt: new Date(sale.soldAt),
         synced: true,
-        userId: sale.userId ?? null,
-        pharmacyId: sale.pharmacyId ?? pharmacyId,
+        userId,
+        pharmacyId,
       },
     });
 
-    await prisma.medicine.update({
-      where: { id: sale.medicineId },
-      data: {
-        currentStock: { decrement: sale.quantity },
-      },
-    });
+    if (!existing) {
+      await prisma.medicine.update({
+        where: { id: sale.medicineId },
+        data: {
+          currentStock: { decrement: sale.quantity },
+        },
+      });
+    }
   }
 
   return NextResponse.json({ message: `${sales.length} sales synced` });

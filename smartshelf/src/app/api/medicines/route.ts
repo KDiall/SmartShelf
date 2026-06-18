@@ -4,12 +4,24 @@ import type { Medicine } from '@/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId') || request.headers.get('x-user-id');
-  const pharmacyId = searchParams.get('pharmacyId') || request.headers.get('x-user-pharmacy-id');
+  const role = request.headers.get('x-user-role');
+  const headerPharmacyId = request.headers.get('x-user-pharmacy-id') || null;
+  const headerUserId = request.headers.get('x-user-id');
 
   const where: Record<string, unknown> = {};
-  if (pharmacyId) where.pharmacyId = pharmacyId;
-  else if (userId) where.userId = userId;
+
+  if (role === 'super_admin') {
+    // Platform owner: may optionally scope to a specific pharmacy via query.
+    const scoped = searchParams.get('pharmacyId');
+    if (scoped) where.pharmacyId = scoped;
+  } else if (headerPharmacyId) {
+    // Tenant users are always locked to their own pharmacy (never trust the query).
+    where.pharmacyId = headerPharmacyId;
+  } else {
+    // Legacy fallback: pre-multi-tenancy data scoped by owning user.
+    where.userId = headerUserId;
+  }
+
   const medicines = await prisma.medicine.findMany({ where });
 
   return NextResponse.json(medicines);
@@ -23,7 +35,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'medicines array required' }, { status: 400 });
   }
 
+  const role = request.headers.get('x-user-role');
+  const headerPharmacyId = request.headers.get('x-user-pharmacy-id') || null;
+  const headerUserId = request.headers.get('x-user-id');
+
   for (const med of medicines) {
+    // Tenant users always write into their own pharmacy; only the platform owner
+    // (super_admin) may set an explicit pharmacy/owner from the payload.
+    const pharmacyId = role === 'super_admin' ? (med.pharmacyId ?? null) : headerPharmacyId;
+    const userId = role === 'super_admin' ? (med.userId ?? headerUserId) : headerUserId;
+
+    // Guard cross-tenant writes: if a record exists under another pharmacy, skip it.
+    if (med.id && role !== 'super_admin' && headerPharmacyId) {
+      const existing = await prisma.medicine.findUnique({ where: { id: med.id } });
+      if (existing && existing.pharmacyId && existing.pharmacyId !== headerPharmacyId) {
+        continue;
+      }
+    }
+
     await prisma.medicine.upsert({
       where: { id: med.id },
       update: {
@@ -36,8 +65,8 @@ export async function POST(request: Request) {
         expiryDate: med.expiryDate,
         costPerUnit: med.costPerUnit,
         isBig5: med.isBig5,
-        userId: med.userId,
-        pharmacyId: med.pharmacyId,
+        userId,
+        pharmacyId,
       },
       create: {
         id: med.id,
@@ -50,8 +79,8 @@ export async function POST(request: Request) {
         expiryDate: med.expiryDate,
         costPerUnit: med.costPerUnit,
         isBig5: med.isBig5,
-        userId: med.userId,
-        pharmacyId: med.pharmacyId,
+        userId,
+        pharmacyId,
       },
     });
   }

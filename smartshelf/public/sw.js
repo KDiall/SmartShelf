@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `smartshelf-static-${CACHE_VERSION}`;
 const API_CACHE = `smartshelf-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { normalizePhone } from '@/lib/phone';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
@@ -32,11 +33,18 @@ export default function LoginPage() {
     setError('');
     setOtpFallback('');
 
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) {
+      setError('Please enter a valid phone number');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone: normalizedPhone }),
       });
 
       const data = await res.json();
@@ -51,7 +59,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(`/verify?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}`);
+      router.push(`/verify?phone=${encodeURIComponent(normalizedPhone)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -110,7 +118,7 @@ export default function LoginPage() {
                   <p className="text-3xl font-black text-center text-amber-900 tracking-[0.3em]">{otpFallback}</p>
                   <p className="text-xs text-amber-600 text-center font-medium">Expires in 5 minutes</p>
                   <Button
-                    onClick={() => router.push(`/verify?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}`)}
+                    onClick={() => router.push(`/verify?phone=${encodeURIComponent(normalizePhone(phone))}`)}
                     className="w-full mt-2 rounded-xl h-11 font-bold"
                     size="lg"
                   >

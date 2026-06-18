@@ -2,10 +2,37 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Phones are stored as digits only so OTP send/verify lookups always match.
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, '');
+}
+
 async function seed() {
   console.log('Starting database seed...');
 
-  // 1. Seed Default Pharmacy
+  // 1. Platform owner (super admin) - NOT tied to any pharmacy.
+  const superAdminPhone = normalizePhone('+23276000000');
+  let superAdmin = await prisma.user.findUnique({ where: { phone: superAdminPhone } });
+  if (!superAdmin) {
+    superAdmin = await prisma.user.create({
+      data: {
+        phone: superAdminPhone,
+        name: 'Platform Owner',
+        role: 'super_admin',
+        verified: true,
+        pharmacyId: null,
+      },
+    });
+    console.log('Seeded platform-only super admin');
+  } else {
+    superAdmin = await prisma.user.update({
+      where: { id: superAdmin.id },
+      data: { role: 'super_admin', pharmacyId: null },
+    });
+    console.log('Updated existing user to platform-only super admin');
+  }
+
+  // 2. Demo pharmacy (a tenant) owned/managed by its own admin.
   let pharmacy = await prisma.pharmacy.findFirst({ where: { name: 'Main Branch' } });
   if (!pharmacy) {
     pharmacy = await prisma.pharmacy.create({
@@ -15,30 +42,30 @@ async function seed() {
         phone: '+23276000000',
       },
     });
-    console.log('Seeded default pharmacy');
+    console.log('Seeded demo pharmacy');
   }
 
-  // 2. Seed Admin User
-  const adminPhone = '+23276000000';
-  let admin = await prisma.user.findUnique({ where: { phone: adminPhone } });
-  
+  // 3. Pharmacy admin for the demo pharmacy.
+  const pharmacyAdminPhone = normalizePhone('+23277000001');
+  let admin = await prisma.user.findUnique({ where: { phone: pharmacyAdminPhone } });
   if (!admin) {
     admin = await prisma.user.create({
       data: {
-        phone: adminPhone,
-        name: 'Super Admin',
-        role: 'super_admin',
+        phone: pharmacyAdminPhone,
+        name: 'Main Branch Admin',
+        role: 'admin',
         verified: true,
         pharmacyId: pharmacy.id,
+        createdBy: superAdmin.id,
       },
     });
-    console.log('Seeded super admin user');
+    console.log('Seeded demo pharmacy admin');
   } else {
     admin = await prisma.user.update({
       where: { id: admin.id },
-      data: { role: 'super_admin', pharmacyId: pharmacy.id },
+      data: { role: 'admin', pharmacyId: pharmacy.id },
     });
-    console.log('Updated existing admin to super_admin');
+    console.log('Updated existing demo pharmacy admin');
   }
 
   // 3. Seed Medicines with Images

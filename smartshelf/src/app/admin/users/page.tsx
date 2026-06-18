@@ -17,6 +17,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import { normalizePhone } from '@/lib/phone';
 import type { AdminUser, Pharmacy } from '@/types';
 
 export default function AdminUsersPage() {
@@ -69,6 +70,13 @@ export default function AdminUsersPage() {
     setCreating(true);
     setCreateError('');
 
+    const normalizedPhone = normalizePhone(newPhone);
+    if (!normalizedPhone) {
+      setCreateError('Please enter a valid phone number');
+      setCreating(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
@@ -78,16 +86,23 @@ export default function AdminUsersPage() {
         },
         body: JSON.stringify({
           name: newName,
-          phone: newPhone,
+          phone: normalizedPhone,
           role: newRole,
           pharmacyId: newPharmacyId || undefined,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create user');
+      const text = await res.text();
+      let data: { error?: string; user?: AdminUser } = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // leave data empty; use text below
+      }
+      if (!res.ok) throw new Error(data.error || text || 'Failed to create user');
+      if (!data.user) throw new Error('Unexpected response from server');
 
-      setUsers((prev) => [data.user, ...prev]);
+      setUsers((prev) => [data.user!, ...prev]);
       setShowAddModal(false);
       setNewName('');
       setNewPhone('');
@@ -274,6 +289,12 @@ export default function AdminUsersPage() {
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
+                  {pharmacies.length === 0 && (
+                    <p className="text-xs text-destructive">No pharmacies exist. Create a pharmacy first.</p>
+                  )}
+                  {pharmacies.length > 0 && !newPharmacyId && (
+                    <p className="text-xs text-destructive">You must select a pharmacy before creating a user.</p>
+                  )}
                 </div>
               )}
               {createError && (
@@ -281,7 +302,11 @@ export default function AdminUsersPage() {
                   <p className="text-sm text-destructive">{createError}</p>
                 </div>
               )}
-              <Button type="submit" disabled={creating || !newPhone} className="w-full">
+              <Button
+                type="submit"
+                disabled={creating || !newPhone || (currentUser?.role === 'super_admin' && !newPharmacyId)}
+                className="w-full"
+              >
                 {creating ? 'Creating...' : 'Create User & Send OTP'}
               </Button>
             </form>
