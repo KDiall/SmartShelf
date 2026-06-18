@@ -5,7 +5,20 @@ const prisma = new PrismaClient();
 async function seed() {
   console.log('Starting database seed...');
 
-  // 1. Seed Admin User
+  // 1. Seed Default Pharmacy
+  let pharmacy = await prisma.pharmacy.findFirst({ where: { name: 'Main Branch' } });
+  if (!pharmacy) {
+    pharmacy = await prisma.pharmacy.create({
+      data: {
+        name: 'Main Branch',
+        address: '123 Health Way, Freetown',
+        phone: '+23276000000',
+      },
+    });
+    console.log('Seeded default pharmacy');
+  }
+
+  // 2. Seed Admin User
   const adminPhone = '+23276000000';
   let admin = await prisma.user.findUnique({ where: { phone: adminPhone } });
   
@@ -14,16 +27,21 @@ async function seed() {
       data: {
         phone: adminPhone,
         name: 'Super Admin',
-        role: 'admin',
+        role: 'super_admin',
         verified: true,
+        pharmacyId: pharmacy.id,
       },
     });
-    console.log('Seeded admin user');
+    console.log('Seeded super admin user');
   } else {
-    console.log('Admin user already exists');
+    admin = await prisma.user.update({
+      where: { id: admin.id },
+      data: { role: 'super_admin', pharmacyId: pharmacy.id },
+    });
+    console.log('Updated existing admin to super_admin');
   }
 
-  // 2. Seed Medicines with Images
+  // 3. Seed Medicines with Images
   // Clear existing to allow fresh re-seed
   console.log('Clearing existing sales and medicines...');
   await prisma.sale.deleteMany({});
@@ -41,6 +59,7 @@ async function seed() {
       isBig5: true,
       image: 'https://utfs.io/f/3f7e5b6a-8c1d-4d7a-8f8a-9a9b9c9d9e9f-coartem.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       name: 'Amoxicillin 500mg Capsules',
@@ -53,6 +72,7 @@ async function seed() {
       isBig5: true,
       image: 'https://utfs.io/f/amox.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       name: 'Paracetamol 500mg Tablets',
@@ -65,6 +85,7 @@ async function seed() {
       isBig5: true,
       image: 'https://utfs.io/f/para.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       name: 'Metronidazole 400mg',
@@ -77,6 +98,7 @@ async function seed() {
       isBig5: true,
       image: 'https://utfs.io/f/metro.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       name: 'ORS + Zinc (Sachets)',
@@ -89,6 +111,7 @@ async function seed() {
       isBig5: true,
       image: 'https://utfs.io/f/ors.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       name: 'Ciprofloxacin 500mg',
@@ -101,6 +124,7 @@ async function seed() {
       isBig5: false,
       image: 'https://utfs.io/f/cipro.jpg',
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
   ];
 
@@ -109,7 +133,7 @@ async function seed() {
   }
   console.log(`Seeded ${seedMedicines.length} medicines with images`);
 
-  // 3. Seed Sample Sales (to see data on dashboard)
+  // 4. Seed Sample Sales (to see data on dashboard)
   const allMeds = await prisma.medicine.findMany();
   const sampleSales = [
     {
@@ -119,6 +143,7 @@ async function seed() {
       soldAt: new Date().toISOString(),
       synced: true,
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       id: crypto.randomUUID(),
@@ -127,6 +152,7 @@ async function seed() {
       soldAt: new Date().toISOString(),
       synced: true,
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     },
     {
       id: crypto.randomUUID(),
@@ -135,6 +161,7 @@ async function seed() {
       soldAt: new Date().toISOString(),
       synced: true,
       userId: admin.id,
+      pharmacyId: pharmacy.id,
     }
   ];
 

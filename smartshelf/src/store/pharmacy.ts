@@ -20,6 +20,17 @@ function getUserId(): string | undefined {
   }
 }
 
+function getPharmacyId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return undefined;
+    return (JSON.parse(raw) as { pharmacyId?: string }).pharmacyId;
+  } catch {
+    return undefined;
+  }
+}
+
 interface PharmacyStore {
   medicines: Medicine[];
   sales: Sale[];
@@ -66,6 +77,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       soldAt: new Date().toISOString(),
       synced: false,
       userId: getUserId(),
+      pharmacyId: getPharmacyId(),
     };
 
     await idb.pendingSales.put(sale);
@@ -97,6 +109,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
           soldAt: new Date().toISOString(),
           synced: false,
           userId: getUserId(),
+          pharmacyId: getPharmacyId(),
         };
         await idb.pendingSales.put(sale);
 

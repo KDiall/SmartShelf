@@ -8,20 +8,34 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  phone     String   @unique
-  name      String?
+  id         String    @id @default(uuid())
+  phone      String    @unique
+  name       String?
+  address    String?
+  location   String?
+  avatar     String?
+  role       String    @default("pharmacist") // super_admin, admin, pharmacist
+  verified   Boolean   @default(false)
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  pharmacyId String?
+  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  medicines  Medicine[]
+  sales      Sale[]
+  guidelines Guideline[]
+}
+
+model Pharmacy {
+  id        String     @id @default(uuid())
+  name      String
   address   String?
-  location  String?
-  avatar    String?
-  role      String   @default("pharmacist")
-  verified  Boolean  @default(false)
-  createdBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  phone     String?
+  users     User[]
   medicines Medicine[]
   sales     Sale[]
-  guidelines Guideline[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Guideline {
@@ -57,19 +71,23 @@ model Medicine {
   isBig5           Boolean  @default(false)
   userId           String?
   user             User?    @relation(fields: [userId], references: [id])
+  pharmacyId       String?
+  pharmacy         Pharmacy? @relation(fields: [pharmacyId], references: [id])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   sales            Sale[]
 }
 
 model Sale {
-  id         String   @id
+  id         String    @id
   medicineId String
-  medicine   Medicine @relation(fields: [medicineId], references: [id])
-  quantity   Int      @default(1)
+  medicine   Medicine  @relation(fields: [medicineId], references: [id])
+  quantity   Int       @default(1)
   soldAt     DateTime
-  synced     Boolean  @default(true)
+  synced     Boolean   @default(true)
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  createdAt  DateTime @default(now())
+  user       User?     @relation(fields: [userId], references: [id])
+  pharmacyId String?
+  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  createdAt  DateTime  @default(now())
 }

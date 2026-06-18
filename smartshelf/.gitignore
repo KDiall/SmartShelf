@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+/whatsapp-server/node_modules
+/whatsapp-server/.wwebjs_auth
+/whatsapp-server/.wwebjs_cache
 /.pnp
 .pnp.*
 .yarn/*

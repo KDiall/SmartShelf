@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, Upload, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UploadButton } from '@/lib/uploadthing';
+import type { Pharmacy } from '@/types';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -21,18 +23,24 @@ export default function SettingsPage() {
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    fetch('/api/users/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    Promise.all([
+      fetch('/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json()),
+      fetch('/api/pharmacies/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.ok ? r.json() : null),
+    ])
+      .then(([data, pharm]) => {
         setName(data.name || '');
         setAddress(data.address || '');
         setLocation(data.location || '');
         setAvatar(data.avatar || '');
+        setPharmacy(pharm);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -54,8 +62,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ name, address, location, avatar }),
       });
       const updated = await res.json();
-      useAuthStore.setState({ user: updated });
-      localStorage.setItem('user', JSON.stringify(updated));
+      const currentUser = useAuthStore.getState().user;
+      useAuthStore.setState({ user: { ...currentUser, ...updated } });
+      localStorage.setItem('user', JSON.stringify({ ...currentUser, ...updated }));
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
@@ -76,7 +85,7 @@ export default function SettingsPage() {
             <ArrowLeft className="h-6 w-6 text-muted-foreground" />
           </Button>
           <h1 className="font-bold text-foreground text-3xl tracking-tight">
-            {user?.role === 'admin' ? 'Admin Settings' : 'Pharmacy Profile'}
+            {user?.role === 'super_admin' ? 'Super Admin Settings' : user?.role === 'admin' ? 'Admin Settings' : 'Pharmacy Profile'}
           </h1>
         </div>
 
@@ -121,6 +130,45 @@ export default function SettingsPage() {
                     }}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Role & Pharmacy Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Account & Branch</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold text-sm">Your Role</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {user?.role === 'super_admin' ? 'Super Admin (full access)' : user?.role === 'admin' ? 'Pharmacy Admin' : 'Pharmacist (sales only)'}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={user?.role === 'super_admin' ? 'default' : user?.role === 'admin' ? 'secondary' : 'outline'}
+                    className={user?.role === 'super_admin' ? 'bg-purple-600' : ''}>
+                    {user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Admin' : 'Pharmacist'}
+                  </Badge>
+                </div>
+                {pharmacy && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30">
+                      <StoreIcon className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold text-sm">{pharmacy.name}</p>
+                      <p className="text-xs text-muted-foreground">{pharmacy.address || 'No address set'}</p>
+                    </div>
+                  </div>
+                )}
+                {!pharmacy && user?.role !== 'super_admin' && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 text-amber-800">
+                    <Building2 className="h-5 w-5" />
+                    <p className="text-sm font-medium">No pharmacy assigned — contact Super Admin</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -215,6 +263,27 @@ export default function SettingsPage() {
                 Profile saved successfully
               </div>
             )}
+            {/* Admin links */}
+            {user?.role === 'super_admin' && (
+              <div className="border-t border-border pt-6">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push('/admin/pharmacies')}
+                  className="w-full justify-start h-auto p-4 bg-primary/5 hover:bg-primary/10 rounded-2xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <StoreIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-primary text-lg">Manage Pharmacies</p>
+                      <p className="text-sm text-muted-foreground">Create and manage all pharmacy branches</p>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            )}
+
             {/* Logout */}
             <div className="border-t border-border pt-6">
               <Button

@@ -26,9 +26,13 @@ async function retry<T>(
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'success';
 
-export async function bootstrapFromServer(userId?: string, authToken?: string): Promise<void> {
-  const medUrl = userId ? `/api/medicines?userId=${userId}` : '/api/medicines';
-  const salesUrl = userId ? `/api/sales?userId=${userId}` : '/api/sales';
+export async function bootstrapFromServer(userId?: string, authToken?: string, pharmacyId?: string): Promise<void> {
+  const params = new URLSearchParams();
+  if (pharmacyId) params.set('pharmacyId', pharmacyId);
+  else if (userId) params.set('userId', userId);
+  const qs = params.toString();
+  const medUrl = qs ? `/api/medicines?${qs}` : '/api/medicines';
+  const salesUrl = qs ? `/api/sales?${qs}` : '/api/sales';
   const headers = authHeaders(authToken);
   const [medRes, salesRes] = await Promise.all([
     fetch(medUrl, { headers }),

@@ -16,12 +16,9 @@ export async function POST(request: Request) {
 
   phone = phone.replace(/[^0-9]/g, '');
 
-  let user = await prisma.user.findUnique({ where: { phone } });
+  const user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {
-    user = await prisma.user.create({
-      data: { phone },
-    });
-    console.log(`[AUTO-REGISTER] Created user for ${phone} (id: ${user.id})`);
+    return NextResponse.json({ error: 'User not found. Contact your pharmacy admin to create your account.' }, { status: 404 });
   }
 
   const otp = generateOtp();

@@ -279,7 +279,7 @@ export default function ReportsPage() {
                 <p className="text-xs text-[#64748b] font-medium">Edit stock, thresholds, and details</p>
               </div>
             </button>
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
               <button
                 onClick={() => router.push('/admin/users')}
                 className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-primary/5 transition-colors text-left"

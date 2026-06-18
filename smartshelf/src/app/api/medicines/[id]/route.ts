@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+function getPharmacyId(request: Request): string | null {
+  return request.headers.get('x-user-pharmacy-id') || null;
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const medicine = await prisma.medicine.findUnique({ where: { id } });
+  const pharmacyId = getPharmacyId(request);
+  const where: Record<string, unknown> = { id };
+  if (pharmacyId) where.pharmacyId = pharmacyId;
+
+  const medicine = await prisma.medicine.findFirst({ where });
 
   if (!medicine) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -20,7 +28,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const pharmacyId = getPharmacyId(request);
   const body = await request.json();
+
+  const where: Record<string, unknown> = { id };
+  if (pharmacyId) where.pharmacyId = pharmacyId;
+
+  const existing = await prisma.medicine.findFirst({ where });
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const medicine = await prisma.medicine.update({
     where: { id },
@@ -40,10 +57,20 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const pharmacyId = getPharmacyId(request);
+
+  const where: Record<string, unknown> = { id };
+  if (pharmacyId) where.pharmacyId = pharmacyId;
+
+  const existing = await prisma.medicine.findFirst({ where });
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   await prisma.medicine.delete({ where: { id } });
 
   return NextResponse.json({ message: 'Deleted' });

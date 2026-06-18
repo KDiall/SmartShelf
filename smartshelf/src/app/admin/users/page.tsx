@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, ShieldCheck, User } from 'lucide-react';
+import { Plus, Trash2, ShieldCheck, User, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,18 +17,21 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import type { AdminUser } from '@/types';
+import type { AdminUser, Pharmacy } from '@/types';
 
 export default function AdminUsersPage() {
   const token = useAuthStore((s) => s.token);
   const currentUser = useAuthStore((s) => s.user);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState('pharmacist');
+  const [newPharmacyId, setNewPharmacyId] = useState('');
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -36,10 +39,17 @@ export default function AdminUsersPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setUsers(await res.json());
+      const fetches = [
+        fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/pharmacies/me', { headers: { Authorization: `Bearer ${token}` } }),
+      ];
+      if (currentUser?.role === 'super_admin') {
+        fetches.push(fetch('/api/admin/pharmacies', { headers: { Authorization: `Bearer ${token}` } }));
+      }
+      const results = await Promise.all(fetches);
+      if (results[0].ok) setUsers(await results[0].json());
+      if (results[1].ok) setPharmacy(await results[1].json());
+      if (results[2]?.ok) setPharmacies(await results[2].json());
     } catch (err) {
       console.error('Failed to load users', err);
     } finally {
@@ -66,7 +76,12 @@ export default function AdminUsersPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName, phone: newPhone, role: newRole }),
+        body: JSON.stringify({
+          name: newName,
+          phone: newPhone,
+          role: newRole,
+          pharmacyId: newPharmacyId || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -77,6 +92,7 @@ export default function AdminUsersPage() {
       setNewName('');
       setNewPhone('');
       setNewRole('pharmacist');
+      setNewPharmacyId('');
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -114,6 +130,18 @@ export default function AdminUsersPage() {
           </Button>
         </div>
 
+        {pharmacy && currentUser?.role === 'admin' && (
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4 flex items-center gap-3">
+              <Store className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold text-sm">{pharmacy.name}</p>
+                <p className="text-xs text-muted-foreground">Pharmacy {pharmacy.address ? `- ${pharmacy.address}` : ''}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center h-40 text-muted-foreground text-lg">
             Loading...
@@ -134,7 +162,11 @@ export default function AdminUsersPage() {
                       <p className="font-semibold text-foreground text-lg">
                         {u.name || 'Unnamed'}
                       </p>
-                      {u.role === 'admin' ? (
+                      {u.role === 'super_admin' ? (
+                        <Badge variant="default" className="flex items-center gap-1 bg-purple-600">
+                          <ShieldCheck className="h-3 w-3" /> Super Admin
+                        </Badge>
+                      ) : u.role === 'admin' ? (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <ShieldCheck className="h-3 w-3" /> Admin
                         </Badge>
@@ -221,13 +253,29 @@ export default function AdminUsersPage() {
                 <select
                   id="role"
                   value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
+                  onChange={(e) => { setNewRole(e.target.value); setNewPharmacyId(''); }}
                   className="flex h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
                 >
                   <option value="pharmacist">Pharmacist</option>
-                  <option value="admin">Admin</option>
+                  {currentUser?.role === 'super_admin' && <option value="admin">Admin</option>}
                 </select>
               </div>
+              {currentUser?.role === 'super_admin' && (
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy">Pharmacy</Label>
+                  <select
+                    id="pharmacy"
+                    value={newPharmacyId}
+                    onChange={(e) => setNewPharmacyId(e.target.value)}
+                    className="flex h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                  >
+                    <option value="">Select a pharmacy...</option>
+                    {pharmacies.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {createError && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
                   <p className="text-sm text-destructive">{createError}</p>

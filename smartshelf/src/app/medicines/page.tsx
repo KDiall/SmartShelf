@@ -56,6 +56,7 @@ export default function MedicinesPage() {
       ...data,
       id: crypto.randomUUID(),
       userId: user?.id,
+      pharmacyId: user?.pharmacyId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

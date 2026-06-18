@@ -8,6 +8,7 @@ export interface JwtPayload {
   userId: string;
   phone: string;
   role: string;
+  pharmacyId: string | null;
 }
 
 export async function signToken(payload: JwtPayload): Promise<string> {

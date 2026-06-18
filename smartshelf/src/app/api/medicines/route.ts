@@ -5,8 +5,11 @@ import type { Medicine } from '@/types';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId') || request.headers.get('x-user-id');
+  const pharmacyId = searchParams.get('pharmacyId') || request.headers.get('x-user-pharmacy-id');
 
-  const where = userId ? { userId } : {};
+  const where: Record<string, unknown> = {};
+  if (pharmacyId) where.pharmacyId = pharmacyId;
+  else if (userId) where.userId = userId;
   const medicines = await prisma.medicine.findMany({ where });
 
   return NextResponse.json(medicines);
@@ -34,6 +37,7 @@ export async function POST(request: Request) {
         costPerUnit: med.costPerUnit,
         isBig5: med.isBig5,
         userId: med.userId,
+        pharmacyId: med.pharmacyId,
       },
       create: {
         id: med.id,
@@ -47,6 +51,7 @@ export async function POST(request: Request) {
         costPerUnit: med.costPerUnit,
         isBig5: med.isBig5,
         userId: med.userId,
+        pharmacyId: med.pharmacyId,
       },
     });
   }

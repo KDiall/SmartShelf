@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     avatar: user.avatar,
     role: user.role,
     verified: user.verified,
+    pharmacyId: user.pharmacyId,
     createdAt: user.createdAt.toISOString(),
   });
 }
@@ -53,6 +54,7 @@ export async function PATCH(request: Request) {
     avatar: updated.avatar,
     role: updated.role,
     verified: updated.verified,
+    pharmacyId: updated.pharmacyId,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   });

@@ -6,12 +6,16 @@ export async function POST(request: Request) {
   const { method, items: bodyItems } = await request.json();
   const userId = request.headers.get('x-user-id');
 
+  const pharmacyId = request.headers.get('x-user-pharmacy-id');
+
   let items: { name: string; quantity: number; unit: string }[];
 
   if (bodyItems) {
     items = bodyItems;
   } else {
-    const where = userId ? { userId } : {};
+    const where: Record<string, unknown> = {};
+    if (pharmacyId) where.pharmacyId = pharmacyId;
+    else if (userId) where.userId = userId;
     const medicines = await prisma.medicine.findMany({ where });
     const lowStock = medicines.filter(
       (m: { currentStock: number; reorderThreshold: number }) => m.currentStock <= m.reorderThreshold

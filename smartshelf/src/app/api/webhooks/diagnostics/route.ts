@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
-    WHATSAPP_API_KEY: !!process.env.WHAPI_API_KEY,
+    WHATSAPP_API_KEY: !!(process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY),
     WHATSAPP_SERVER_URL: process.env.WHAPI_BASE_URL || 'http://localhost:3700',
     DATABASE_URL: !!process.env.DATABASE_URL,
     JWT_SECRET: !!process.env.JWT_SECRET,
@@ -18,9 +18,9 @@ export async function GET() {
     const k = process.env.OPENAI_API_KEY;
     keyPreview.OPENAI_API_KEY = k.length > 12 ? k.slice(0, 8) + '...' + k.slice(-4) : '(too short)';
   }
-  if (process.env.WHAPI_API_KEY) {
-    const k = process.env.WHAPI_API_KEY;
-    keyPreview.WHATSAPP_API_KEY = k.length > 8 ? k.slice(0, 4) + '...' + k.slice(-4) : '(set)';
+  const whatsappApiKey = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY;
+  if (whatsappApiKey) {
+    keyPreview.WHATSAPP_API_KEY = whatsappApiKey.length > 8 ? whatsappApiKey.slice(0, 4) + '...' + whatsappApiKey.slice(-4) : '(set)';
   }
 
   let openAiTest = 'not tested';

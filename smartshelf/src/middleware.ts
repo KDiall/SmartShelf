@@ -23,14 +23,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  if (pathname.startsWith('/api/admin/') && payload.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (pathname.startsWith('/api/admin/')) {
+    if (payload.role !== 'super_admin' && payload.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-user-id', payload.userId);
   requestHeaders.set('x-user-phone', payload.phone);
   requestHeaders.set('x-user-role', payload.role);
+  requestHeaders.set('x-user-pharmacy-id', payload.pharmacyId ?? '');
 
   return NextResponse.next({
     request: { headers: requestHeaders },

@@ -9,6 +9,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'sales array required' }, { status: 400 });
   }
 
+  const pharmacyId = request.headers.get('x-user-pharmacy-id') || null;
+
   for (const sale of sales as Sale[]) {
     await prisma.sale.upsert({
       where: { id: sale.id },
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
         soldAt: new Date(sale.soldAt),
         synced: true,
         userId: sale.userId ?? null,
+        pharmacyId: sale.pharmacyId ?? pharmacyId,
       },
     });
 

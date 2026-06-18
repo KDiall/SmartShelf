@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect WhatsApp</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        img { max-width: 100%; margin: 1rem 0; }
+        .status { margin-top: 1rem; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1 id="brand-name">WhatsApp Connect</h1>
+        <p id="brand-tagline">Scan the QR code to start</p>
+        <div id="qr-container">
+            <p>Loading QR code...</p>
+        </div>
+        <div id="status" class="status">Connecting to server...</div>
+    </div>
+
+    <script>
+        const phoneE164 = window.location.pathname.split('/').pop();
+        const socket = io({ path: '/socket.io' });
+        const qrContainer = document.getElementById('qr-container');
+        const status = document.getElementById('status');
+
+        fetch('/api/brand').then(r => r.json()).then(data => {
+            document.getElementById('brand-name').innerText = data.name;
+            document.getElementById('brand-tagline').innerText = data.tagline;
+        });
+
+        socket.on('connect', () => {
+            status.innerText = 'Connected to server';
+        });
+
+        socket.on(`qr:${phoneE164}`, (base64) => {
+            qrContainer.innerHTML = `<img src="${base64}" alt="WhatsApp QR Code">`;
+            status.innerText = 'Scan the QR code with your phone';
+        });
+
+        socket.on(`connected:${phoneE164}`, (data) => {
+            qrContainer.innerHTML = '<h2>✅ Connected!</h2>';
+            status.innerText = `Logged in as ${data.phoneNumber}`;
+        });
+
+        // Check initial status
+        fetch(`/status?api_key=${localStorage.getItem('whatsapp_api_key') || ''}`).then(r => r.json()).then(data => {
+            if (data.connected) {
+                qrContainer.innerHTML = '<h2>✅ Connected!</h2>';
+                status.innerText = `Logged in as ${data.phoneNumber}`;
+            }
+        }).catch(() => {
+            // Probably unauthorized, but that's fine for this UI if the user just opened it
+        });
+    </script>
+</body>
+</html>

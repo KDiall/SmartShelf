@@ -1,5 +1,5 @@
 const WHATSAPP_SERVER_URL = process.env.WHAPI_BASE_URL || 'http://localhost:3700';
-const WHATSAPP_API_KEY = process.env.WHAPI_API_KEY || '';
+const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY || '';
 
 interface WhapiResponse {
   sent: boolean;

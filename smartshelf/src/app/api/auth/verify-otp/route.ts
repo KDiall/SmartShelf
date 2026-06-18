@@ -29,20 +29,22 @@ export async function POST(request: Request) {
     data: { used: true },
   });
 
-  let user = await prisma.user.findUnique({ where: { phone } });
+  const user = await prisma.user.findUnique({ where: { phone } });
 
   if (!user) {
-    user = await prisma.user.create({
-      data: { phone, verified: true },
-    });
-  } else {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: { verified: true },
-    });
+    return NextResponse.json({ error: 'User not found. Contact your pharmacy admin.' }, { status: 404 });
   }
 
-  const token = await signToken({ userId: user.id, phone: user.phone, role: user.role });
+  if (!user.pharmacyId && user.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Account not assigned to a pharmacy. Contact your admin.' }, { status: 403 });
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { verified: true },
+  });
+
+  const token = await signToken({ userId: user.id, phone: user.phone, role: user.role, pharmacyId: user.pharmacyId });
 
   return NextResponse.json({
     token,
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
       avatar: user.avatar,
       role: user.role,
       verified: user.verified,
+      pharmacyId: user.pharmacyId,
       createdAt: user.createdAt.toISOString(),
     },
   });

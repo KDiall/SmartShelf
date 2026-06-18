@@ -58,6 +58,7 @@ export default function StockPage() {
       ...data,
       isBig5: data.isBig5 ?? false,
       userId: user?.id,
+      pharmacyId: user?.pharmacyId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

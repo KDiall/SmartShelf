@@ -2,7 +2,7 @@
 import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
+import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings, Store } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/stock', label: 'Stock', Icon: Pill },
   { href: '/orders', label: 'Orders', Icon: ShoppingCart },
   { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
+  { href: '/admin/pharmacies', label: 'Pharmacies', Icon: Store, superAdminOnly: true },
   { href: '/more', label: 'Reports', Icon: BarChart3 },
   { href: '/settings', label: 'Settings', Icon: Settings },
 ];
@@ -50,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   // Baseline must match server's pre-rendered HTML exactly
-  const isAdmin = mounted && user?.role === 'admin';
+  const isAdmin = mounted && (user?.role === 'admin' || user?.role === 'super_admin');
 
   return (
     <div className="min-h-screen flex">
@@ -82,8 +83,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-2">
-          {navItems.map(({ href, label, Icon, adminOnly }) => {
+          {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
             if (adminOnly && !isAdmin) return null;
+            if (superAdminOnly && user?.role !== 'super_admin') return null;
             const active = isActive(href);
             return (
               <Link
@@ -121,10 +123,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               {syncStatus === 'idle' && isOnline && <span className="text-green-400/70">Connected</span>}
               {syncStatus === 'idle' && !isOnline && <span className="text-red-400">Offline</span>}
             </button>
-            {user && (
+              {user && (
               <div className="p-4 border-t border-white/10">
                 <p className="text-sm text-white/60">{user.name || user.phone}</p>
-                <p className="text-xs text-white/40 capitalize">{user.role}</p>
+                <p className="text-xs text-white/40 capitalize">{user.role === 'super_admin' ? 'Super Admin' : user.role}</p>
               </div>
             )}
           </>
@@ -152,8 +154,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
 
                   <nav className="py-4 space-y-1 px-3">
-                    {navItems.map(({ href, label, Icon, adminOnly }) => {
+                    {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
                       if (adminOnly && !isAdmin) return null;
+                      if (superAdminOnly && user?.role !== 'super_admin') return null;
                       const active = isActive(href);
                       return (
                         <SheetClose key={href} render={<Link href={href} />} className={cn(
@@ -198,8 +201,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-50 bottom-nav-shadow safe-area-bottom">
         <div className="flex items-center h-16">
-          {navItems.map(({ href, label, Icon, adminOnly }) => {
+          {navItems.map(({ href, label, Icon, adminOnly, superAdminOnly }) => {
             if (adminOnly && !isAdmin) return null;
+            if (superAdminOnly && user?.role !== 'super_admin') return null;
             const active = isActive(href);
             return (
               <Link

@@ -10,8 +10,17 @@ function generateOtp(): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get('role');
+  const currentRole = request.headers.get('x-user-role');
+  const currentPharmacyId = request.headers.get('x-user-pharmacy-id');
 
-  const where = role ? { role } : {};
+  const where: Record<string, unknown> = {};
+  if (role) where.role = role;
+
+  // Pharmacy admins can only see users in their own pharmacy
+  if (currentRole === 'admin' && currentPharmacyId) {
+    where.pharmacyId = currentPharmacyId;
+  }
+
   const users = await prisma.user.findMany({
     where,
     orderBy: { createdAt: 'desc' },
@@ -23,6 +32,7 @@ export async function GET(request: Request) {
       verified: true,
       createdAt: true,
       createdBy: true,
+      pharmacyId: true,
     },
   });
 
@@ -30,7 +40,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { name, phone, role } = await request.json();
+  const { name, phone, role, pharmacyId: bodyPharmacyId } = await request.json();
 
   if (!phone || typeof phone !== 'string') {
     return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
@@ -41,7 +51,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'User with this phone already exists' }, { status: 409 });
   }
 
-  const userRole = role === 'admin' ? 'admin' : 'pharmacist';
+  const currentRole = request.headers.get('x-user-role');
+  const currentPharmacyId = request.headers.get('x-user-pharmacy-id');
+
+  // Pharmacy admins can only create pharmacist users in their own pharmacy
+  const userRole = role === 'admin' && currentRole === 'super_admin' ? 'admin' : 'pharmacist';
+
+  // Determine pharmacyId: super_admin provides it in body; admin uses their own
+  let pharmacyId: string | null;
+  if (currentRole === 'super_admin') {
+    pharmacyId = bodyPharmacyId || null;
+    if (userRole === 'admin' && !pharmacyId) {
+      return NextResponse.json({ error: 'Pharmacy is required for admin users' }, { status: 400 });
+    }
+  } else {
+    pharmacyId = currentPharmacyId || null;
+  }
 
   const userId = request.headers.get('x-user-id');
 
@@ -52,6 +77,7 @@ export async function POST(request: Request) {
       role: userRole,
       verified: false,
       createdBy: userId,
+      pharmacyId: pharmacyId,
     },
   });
 
@@ -78,6 +104,7 @@ export async function POST(request: Request) {
       role: user.role,
       verified: user.verified,
       createdAt: user.createdAt.toISOString(),
+      pharmacyId: user.pharmacyId,
     },
     otpSent: result.sent,
     whapiError: result.error || null,
@@ -93,6 +120,7 @@ export async function DELETE(request: Request) {
 
   const userRole = request.headers.get('x-user-role');
   const currentUserId = request.headers.get('x-user-id');
+  const currentPharmacyId = request.headers.get('x-user-pharmacy-id');
 
   if (currentUserId === id) {
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
@@ -103,7 +131,12 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  if (target.role === 'admin' && userRole !== 'admin') {
+  // Pharmacy admins can only delete users in their own pharmacy
+  if (userRole === 'admin' && currentPharmacyId && target.pharmacyId !== currentPharmacyId) {
+    return NextResponse.json({ error: 'Cannot delete users from other pharmacies' }, { status: 403 });
+  }
+
+  if (target.role === 'admin' && userRole !== 'super_admin') {
     return NextResponse.json({ error: 'Cannot delete admin users' }, { status: 403 });
   }
 

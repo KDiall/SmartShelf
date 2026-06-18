@@ -13,6 +13,7 @@ export interface Medicine {
   costPerUnit: number;
   isBig5: boolean;
   userId?: string;
+  pharmacyId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +25,16 @@ export interface Sale {
   soldAt: string;
   synced: boolean;
   userId?: string;
+  pharmacyId?: string;
+}
+
+export interface Pharmacy {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StockAlert {
@@ -53,6 +64,7 @@ export interface User {
   avatar: string | null;
   role: string;
   verified: boolean;
+  pharmacyId?: string;
   createdAt: string;
 }
 
@@ -70,4 +82,5 @@ export interface AdminUser {
   verified: boolean;
   createdAt: string;
   createdBy: string | null;
+  pharmacyId?: string;
 }

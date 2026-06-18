@@ -13,7 +13,7 @@ export function useSync() {
 
   useEffect(() => {
     if (online) {
-      bootstrapFromServer(user?.id, token ?? undefined).then(() => {
+      bootstrapFromServer(user?.id, token ?? undefined, user?.pharmacyId).then(() => {
         syncPendingSales(token ?? undefined).then(() => loadData());
       });
     } else {
@@ -23,5 +23,5 @@ export function useSync() {
         });
       }
     }
-  }, [online, loadData, user?.id, token]);
+  }, [online, loadData, user?.id, user?.pharmacyId, token]);
 }
