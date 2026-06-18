@@ -1,81 +1,52 @@
 import { NextResponse } from 'next/server';
 import { generateResponse } from '@/lib/rag';
 
-const WHAPI_BASE_URL = process.env.WHAPI_BASE_URL || 'https://gate.whapi.cloud';
-const WHAPI_API_KEY = process.env.WHAPI_API_KEY || '';
-
-async function sendReply(to: string, body: string): Promise<string | null> {
-  if (!WHAPI_API_KEY) return 'WHAPI_API_KEY not set';
-  try {
-    const res = await fetch(`${WHAPI_BASE_URL}/messages/text`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${WHAPI_API_KEY}`,
-      },
-      body: JSON.stringify({ to, body }),
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      return `Whapi reply failed (${res.status}): ${err}`;
-    }
-    return null;
-  } catch (err) {
-    return `Whapi reply error: ${err instanceof Error ? err.message : err}`;
-  }
-}
-
 export async function GET() {
   return NextResponse.json({ received: true });
 }
 
 export async function POST(request: Request) {
-  let body;
+  const apiKey = request.headers.get('x-api-key');
+  if (process.env.WHATSAPP_API_KEY && apiKey !== process.env.WHATSAPP_API_KEY) {
+    console.error('Unauthorized webhook attempt');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let payload;
   try {
-    body = await request.json();
+    payload = await request.json();
   } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  console.log('Webhook received:', JSON.stringify(payload).slice(0, 500));
+
+  // The new server sends a single message event per request
+  if (payload.event !== 'message') {
     return NextResponse.json({ received: true });
   }
 
-  const raw = JSON.stringify(body).slice(0, 500);
-  console.log('Webhook received:', raw);
+  const text = payload.message || '';
+  const from = payload.from; // This is the JID (e.g. 123456789@c.us)
 
-  if (!WHAPI_API_KEY) {
-    console.error('WHAPI_API_KEY is not set');
+  if (!text || !from) {
     return NextResponse.json({ received: true });
   }
 
-  const messages = body.messages;
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    return NextResponse.json({ received: true });
+  console.log(`Processing msg from ${from}: "${text.slice(0, 100)}"`);
+
+  let reply: string;
+  try {
+    reply = await generateResponse(text);
+    console.log(`AI response: "${reply.slice(0, 100)}"`);
+  } catch (err) {
+    reply = `Server error: ${err instanceof Error ? err.message : 'unknown error'}`;
+    console.error('generateResponse threw:', err);
   }
 
-  for (const msg of messages) {
-    if (msg.type !== 'text' || msg.from_me) continue;
-
-    const incomingNumber = msg.from?.replace(/[^0-9]/g, '');
-    const text = msg.text?.body || '';
-
-    if (!text || !incomingNumber) continue;
-
-    console.log(`Processing msg from ${incomingNumber}: "${text.slice(0, 100)}"`);
-
-    let reply: string;
-    try {
-      reply = await generateResponse(text);
-      console.log(`AI response: "${reply.slice(0, 100)}"`);
-    } catch (err) {
-      reply = `Server error: ${err instanceof Error ? err.message : 'unknown error'}`;
-      console.error('generateResponse threw:', err);
-    }
-
-    const errMsg = await sendReply(incomingNumber, reply);
-    if (errMsg) {
-      console.error(errMsg);
-    } else {
-      console.log(`Reply sent to ${incomingNumber}`);
-    }
-  }
-
-  return NextResponse.json({ received: true });
+  // The local WhatsApp server expects the reply in the response
+  return NextResponse.json({ 
+    answer: reply,
+    to: from 
+  });
 }

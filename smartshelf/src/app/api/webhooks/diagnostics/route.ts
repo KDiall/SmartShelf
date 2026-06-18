@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
-    WHAPI_API_KEY: !!process.env.WHAPI_API_KEY,
-    WHAPI_BASE_URL: process.env.WHAPI_BASE_URL || 'not set (uses default)',
+    WHATSAPP_API_KEY: !!process.env.WHAPI_API_KEY,
+    WHATSAPP_SERVER_URL: process.env.WHAPI_BASE_URL || 'http://localhost:3700',
     DATABASE_URL: !!process.env.DATABASE_URL,
     JWT_SECRET: !!process.env.JWT_SECRET,
     GENELINE_X_API_KEY: !!process.env.GENELINE_X_API_KEY,
@@ -20,7 +20,7 @@ export async function GET() {
   }
   if (process.env.WHAPI_API_KEY) {
     const k = process.env.WHAPI_API_KEY;
-    keyPreview.WHAPI_API_KEY = k.length > 12 ? k.slice(0, 4) + '...' + k.slice(-4) : '(too short)';
+    keyPreview.WHATSAPP_API_KEY = k.length > 8 ? k.slice(0, 4) + '...' + k.slice(-4) : '(set)';
   }
 
   let openAiTest = 'not tested';
@@ -68,26 +68,26 @@ function buildAdvice(
     advice.push('OpenAI key issue: ' + openAiTest);
   }
 
-  if (!envVars.WHAPI_API_KEY) {
-    advice.push('WHAPI_API_KEY is NOT set. Add it to Vercel environment variables.');
+  if (!envVars.WHATSAPP_API_KEY) {
+    advice.push('WHATSAPP_API_KEY (WHAPI_API_KEY) is NOT set. Add it to environment variables.');
   }
 
   if (!envVars.DATABASE_URL) {
-    advice.push('DATABASE_URL is NOT set. Add it to Vercel environment variables.');
+    advice.push('DATABASE_URL is NOT set. Add it to environment variables.');
   }
 
   if (!envVars.JWT_SECRET) {
-    advice.push('JWT_SECRET is NOT set. Add it to Vercel environment variables.');
+    advice.push('JWT_SECRET is NOT set. Add it to environment variables.');
   }
 
-  if (envVars.OPENAI_API_KEY && envVars.WHAPI_API_KEY) {
+  if (envVars.OPENAI_API_KEY && envVars.WHATSAPP_API_KEY) {
     advice.push(
-      'Both OpenAI and Whapi keys are set. Verify webhook URL is configured in Whapi.cloud dashboard.'
+      'Both OpenAI and WhatsApp keys are set. Verify the WhatsApp server is running and configured with the correct AGENT_URL.'
     );
   }
 
   if (!advice.length) {
-    advice.push('All checks passed. If the AI still does not respond, check that the Whapi.cloud webhook URL is set to: /api/webhooks/whapi');
+    advice.push('All checks passed. If the AI still does not respond, check the WhatsApp server logs.');
   }
 
   return advice;

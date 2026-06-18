@@ -1,5 +1,5 @@
-const WHAPI_BASE_URL = process.env.WHAPI_BASE_URL || 'https://gate.whapi.cloud';
-const WHAPI_API_KEY = process.env.WHAPI_API_KEY || '';
+const WHATSAPP_SERVER_URL = process.env.WHAPI_BASE_URL || 'http://localhost:3700';
+const WHATSAPP_API_KEY = process.env.WHAPI_API_KEY || '';
 
 interface WhapiResponse {
   sent: boolean;
@@ -9,14 +9,14 @@ interface WhapiResponse {
 
 async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10_000);
+  const timer = setTimeout(() => controller.abort(), 15_000);
 
   try {
-    const res = await fetch(`${WHAPI_BASE_URL}${endpoint}`, {
+    const res = await fetch(`${WHATSAPP_SERVER_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${WHAPI_API_KEY}`,
+        'x-api-key': WHATSAPP_API_KEY,
       },
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -24,12 +24,12 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
 
     if (!res.ok) {
       const err = await res.text();
-      console.error('Whapi error:', err);
+      console.error('WhatsApp server error:', err);
       return { sent: false, error: err };
     }
 
     const data = await res.json();
-    return { sent: true, message: data.message };
+    return { sent: true, message: data.status || 'success' };
   } catch (err) {
     const isTimeout =
       err instanceof Error &&
@@ -39,8 +39,8 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
     return {
       sent: false,
       error: isTimeout
-        ? 'WhatsApp service is temporarily unreachable. Please try again later or use SMS instead.'
-        : 'Failed to send WhatsApp message. Check your API configuration.',
+        ? 'WhatsApp service is temporarily unreachable. Please try again later.'
+        : 'Failed to send WhatsApp message. Check your WhatsApp server configuration.',
     };
   } finally {
     clearTimeout(timer);
@@ -48,10 +48,15 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
 }
 
 export async function sendTextMessage(to: string, text: string): Promise<WhapiResponse> {
-  const sanitized = to.replace(/[^0-9]/g, '');
-  return whapiRequest('/messages/text', {
-    to: sanitized,
-    body: text,
+  // Ensure number is in E.164 format (+XXXXXXXXXXX)
+  let phoneE164 = to.replace(/[^0-9]/g, '');
+  if (!phoneE164.startsWith('+')) {
+    phoneE164 = `+${phoneE164}`;
+  }
+
+  return whapiRequest('/send-whatsapp', {
+    phoneE164: phoneE164,
+    message: text,
   });
 }
 
