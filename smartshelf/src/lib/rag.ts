@@ -101,7 +101,16 @@ Instructions:
     if (!res.ok) {
       const err = await res.text();
       console.error('OpenAI error:', err);
-      return 'Sorry, I had trouble reaching the AI. Try again.';
+      if (res.status === 401) {
+        return 'OpenAI API key is invalid or expired. Ask an admin to check the key.';
+      }
+      if (res.status === 429) {
+        return 'OpenAI is rate-limited (too many requests). Please wait a moment and try again.';
+      }
+      if (res.status === 403) {
+        return 'OpenAI API key does not have access to gpt-4o-mini. Check billing and model access.';
+      }
+      return `OpenAI error (${res.status}). Please try again.`;
     }
 
     const data = await res.json();

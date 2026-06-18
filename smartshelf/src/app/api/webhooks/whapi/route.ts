@@ -9,6 +9,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!WHAPI_API_KEY) {
+    console.error('WHAPI_API_KEY is not set');
+    return NextResponse.json({ received: true });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY is not set');
+    return NextResponse.json({ received: true });
+  }
+
   const body = await request.json();
 
   const messages = body.messages;
@@ -27,7 +37,7 @@ export async function POST(request: Request) {
     try {
       const response = await generateResponse(text);
 
-      await fetch(`${WHAPI_BASE_URL}/messages/text`, {
+      const replyRes = await fetch(`${WHAPI_BASE_URL}/messages/text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,6 +48,11 @@ export async function POST(request: Request) {
           body: response,
         }),
       });
+
+      if (!replyRes.ok) {
+        const errText = await replyRes.text();
+        console.error(`Whapi reply failed (${replyRes.status}): ${errText}`);
+      }
     } catch (err) {
       console.error('Failed to process message:', err);
     }
