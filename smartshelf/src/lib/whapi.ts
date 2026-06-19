@@ -1,4 +1,4 @@
-const WHATSAPP_SERVER_URL = process.env.WHAPI_BASE_URL || 'http://localhost:3700';
+const WHATSAPP_SERVER_URL = (process.env.WHAPI_BASE_URL || 'http://localhost:3700').replace(/\/$/, '');
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY || '';
 
 interface WhapiResponse {
@@ -7,41 +7,39 @@ interface WhapiResponse {
   error?: string;
 }
 
-async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiResponse> {
+interface WhatsAppServerStatus {
+  connected?: boolean;
+  phoneNumber?: string | null;
+  error?: string;
+}
+
+async function whapiRequest(endpoint: string, body: unknown, method: 'POST' | 'GET' = 'POST'): Promise<{ ok: boolean; status: number; data?: unknown; text: string }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
+  const url = `${WHATSAPP_SERVER_URL}${endpoint}`;
 
   try {
-    const res = await fetch(`${WHATSAPP_SERVER_URL}${endpoint}`, {
-      method: 'POST',
+    const res = await fetch(url, {
+      method,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': WHATSAPP_API_KEY,
       },
-      body: JSON.stringify(body),
-      signal: controller.signal,
+      ...(method === 'POST' ? { body: JSON.stringify(body), signal: controller.signal } : { signal: controller.signal }),
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('WhatsApp server error:', err);
-      return { sent: false, error: err };
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : undefined;
+    } catch {
+      data = undefined;
     }
 
-    const data = await res.json();
-    return { sent: true, message: data.status || 'success' };
+    return { ok: res.ok, status: res.status, data, text };
   } catch (err) {
-    const isTimeout =
-      err instanceof Error &&
-      (err.name === 'AbortError' ||
-        (err.cause as Record<string, unknown>)?.code === 'UND_ERR_CONNECT_TIMEOUT');
-
-    return {
-      sent: false,
-      error: isTimeout
-        ? 'WhatsApp service is temporarily unreachable. Please try again later.'
-        : 'Failed to send WhatsApp message. Check your WhatsApp server configuration.',
-    };
+    const message = err instanceof Error ? err.message : 'unknown error';
+    return { ok: false, status: 0, text: message };
   } finally {
     clearTimeout(timer);
   }
@@ -49,15 +47,51 @@ async function whapiRequest(endpoint: string, body: unknown): Promise<WhapiRespo
 
 export async function sendTextMessage(to: string, text: string): Promise<WhapiResponse> {
   // Ensure number is in E.164 format (+XXXXXXXXXXX)
-  let phoneE164 = to.replace(/[^0-9]/g, '');
-  if (!phoneE164.startsWith('+')) {
-    phoneE164 = `+${phoneE164}`;
-  }
+  const digits = to.replace(/[^0-9]/g, '');
+  const phoneE164 = digits.startsWith('+') ? digits : `+${digits}`;
 
-  return whapiRequest('/send-whatsapp', {
-    phoneE164: phoneE164,
+  console.log(`[WHAPI] Sending WhatsApp message to ${phoneE164}`);
+  const result = await whapiRequest('/send-whatsapp', {
+    phoneE164,
     message: text,
   });
+
+  if (!result.ok) {
+    console.error(`[WHAPI] Send failed (${result.status}): ${result.text}`, result.data);
+    const isTimeout = result.status === 0;
+    return {
+      sent: false,
+      error: isTimeout
+        ? 'WhatsApp service is temporarily unreachable. Please try again later.'
+        : `WhatsApp server error (${result.status}): ${result.text || 'unknown'}`,
+    };
+  }
+
+  console.log(`[WHAPI] Message accepted`, result.data);
+  return { sent: true, message: (result.data as { status?: string })?.status || 'success' };
+}
+
+export async function getWhatsAppStatus(): Promise<WhatsAppServerStatus> {
+  const result = await whapiRequest('/status', undefined, 'GET');
+  if (!result.ok) {
+    return {
+      connected: false,
+      error: result.status === 0 ? 'WhatsApp server unreachable' : `Server error ${result.status}: ${result.text}`,
+    };
+  }
+  const data = (result.data as { connected?: boolean; phoneNumber?: string | null }) || {};
+  return { connected: !!data.connected, phoneNumber: data.phoneNumber || null };
+}
+
+export async function reconnectWhatsAppServer(): Promise<{ success: boolean; error?: string }> {
+  const result = await whapiRequest('/init', {}, 'POST');
+  if (!result.ok) {
+    return {
+      success: false,
+      error: result.status === 0 ? 'WhatsApp server unreachable' : `Init failed (${result.status}): ${result.text}`,
+    };
+  }
+  return { success: true };
 }
 
 export async function sendOtpMessage(phone: string, otp: string): Promise<WhapiResponse> {

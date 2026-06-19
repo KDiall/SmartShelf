@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { getWhatsAppStatus } from '@/lib/whapi';
+
 export async function GET() {
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
@@ -47,18 +49,30 @@ export async function GET() {
     }
   }
 
+  let whatsAppTest = 'not tested';
+  try {
+    const status = await getWhatsAppStatus();
+    whatsAppTest = status.connected
+      ? `OK (connected: ${status.phoneNumber || 'unknown'})`
+      : `FAILED: ${status.error || 'not connected'}`;
+  } catch (err) {
+    whatsAppTest = `ERROR: ${err instanceof Error ? err.message : 'unknown'}`;
+  }
+
   return NextResponse.json({
     environment: process.env.NODE_ENV || 'unknown',
     envVarsSet: envVars,
     keyPreview,
     openAiTest,
-    advice: buildAdvice(envVars, openAiTest),
+    whatsAppTest,
+    advice: buildAdvice(envVars, openAiTest, whatsAppTest),
   });
 }
 
 function buildAdvice(
   envVars: Record<string, boolean | string>,
-  openAiTest: string
+  openAiTest: string,
+  whatsAppTest: string
 ): string[] {
   const advice: string[] = [];
 
@@ -80,7 +94,11 @@ function buildAdvice(
     advice.push('JWT_SECRET is NOT set. Add it to environment variables.');
   }
 
-  if (envVars.OPENAI_API_KEY && envVars.WHATSAPP_API_KEY) {
+  if (whatsAppTest.startsWith('FAILED') || whatsAppTest.startsWith('ERROR')) {
+    advice.push('WhatsApp server issue: ' + whatsAppTest);
+  }
+
+  if (envVars.OPENAI_API_KEY && envVars.WHATSAPP_API_KEY && !whatsAppTest.startsWith('FAILED') && !whatsAppTest.startsWith('ERROR')) {
     advice.push(
       'Both OpenAI and WhatsApp keys are set. Verify the WhatsApp server is running and configured with the correct AGENT_URL.'
     );

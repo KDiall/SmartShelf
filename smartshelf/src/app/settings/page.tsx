@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon } from 'lucide-react';
+import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon, MessageCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UploadButton } from '@/lib/uploadthing';
 import type { Pharmacy } from '@/types';
@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [location, setLocation] = useState('');
   const [avatar, setAvatar] = useState('');
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
+  const [whatsappStatus, setWhatsappStatus] = useState<{ connected: boolean; phoneNumber?: string | null; error?: string } | null>(null);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -41,10 +43,50 @@ export default function SettingsPage() {
         setLocation(data.location || '');
         setAvatar(data.avatar || '');
         setPharmacy(pharm);
+        if (data.role === 'super_admin' || data.role === 'admin') {
+          loadWhatsappStatus();
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token]);
+
+  async function loadWhatsappStatus() {
+    if (!token) return;
+    setWhatsappLoading(true);
+    try {
+      const res = await fetch('/api/admin/whatsapp', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setWhatsappStatus(data);
+    } catch (err) {
+      setWhatsappStatus({ connected: false, error: err instanceof Error ? err.message : 'unknown error' });
+    } finally {
+      setWhatsappLoading(false);
+    }
+  }
+
+  async function reconnectWhatsapp() {
+    if (!token) return;
+    setWhatsappLoading(true);
+    try {
+      const res = await fetch('/api/admin/whatsapp', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadWhatsappStatus();
+      } else {
+        setWhatsappStatus({ connected: false, error: data.error || 'Reconnection failed' });
+      }
+    } catch (err) {
+      setWhatsappStatus({ connected: false, error: err instanceof Error ? err.message : 'unknown error' });
+    } finally {
+      setWhatsappLoading(false);
+    }
+  }
 
   const logout = useAuthStore((s) => s.logout);
 
@@ -171,6 +213,52 @@ export default function SettingsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* WhatsApp Connection */}
+            {(user?.role === 'super_admin' || user?.role === 'admin') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">WhatsApp Connection</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-semibold text-sm">Status</p>
+                        <p className="text-xs text-muted-foreground">
+                          {whatsappLoading
+                            ? 'Checking...'
+                            : whatsappStatus
+                            ? whatsappStatus.connected
+                              ? `Connected (${whatsappStatus.phoneNumber || 'unknown'})`
+                              : `Disconnected: ${whatsappStatus.error || 'not connected'}`
+                            : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={whatsappStatus?.connected ? 'default' : 'destructive'}>
+                      {whatsappStatus?.connected ? 'Connected' : 'Disconnected'}
+                    </Badge>
+                  </div>
+                  {user?.role === 'super_admin' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={reconnectWhatsapp}
+                      disabled={whatsappLoading}
+                      className="w-full h-12 rounded-xl gap-2"
+                    >
+                      {whatsappLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+                      {whatsappLoading ? 'Reconnecting...' : 'Reconnect WhatsApp Server'}
+                    </Button>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    If disconnected, scan the QR code at the WhatsApp server connect page.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Profile Fields */}
             <Card>
