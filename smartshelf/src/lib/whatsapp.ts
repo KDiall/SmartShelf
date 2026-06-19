@@ -52,8 +52,7 @@ async function whatsappRequest(
 }
 
 export async function sendTextMessage(to: string, text: string): Promise<WhatsAppResponse> {
-  const digits = to.replace(/[^0-9]/g, '');
-  const phoneE164 = digits.startsWith('+') ? digits : `+${digits}`;
+  const phoneE164 = '+' + to.replace(/[^0-9]/g, '');
 
   console.log(`[WhatsApp] Sending message to ${phoneE164}`);
   const result = await whatsappRequest('/send-whatsapp', {

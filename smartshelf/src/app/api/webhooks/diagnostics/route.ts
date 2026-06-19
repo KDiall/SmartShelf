@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 
 import { getWhatsAppStatus } from '@/lib/whatsapp';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const apiKey = request.headers.get('x-api-key');
+  const expectedKey = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY;
+  if (expectedKey && apiKey !== expectedKey) {
+    console.error('Unauthorized diagnostics attempt');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
     WHATSAPP_API_KEY: !!(process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY),
@@ -14,16 +21,6 @@ export async function GET() {
     PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || 'not set',
     UPLOADTHING_TOKEN: !!process.env.UPLOADTHING_TOKEN,
   };
-
-  const keyPreview: Record<string, string | null> = {};
-  if (process.env.OPENAI_API_KEY) {
-    const k = process.env.OPENAI_API_KEY;
-    keyPreview.OPENAI_API_KEY = k.length > 12 ? k.slice(0, 8) + '...' + k.slice(-4) : '(too short)';
-  }
-  const whatsappApiKey = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY;
-  if (whatsappApiKey) {
-    keyPreview.WHATSAPP_API_KEY = whatsappApiKey.length > 8 ? whatsappApiKey.slice(0, 4) + '...' + whatsappApiKey.slice(-4) : '(set)';
-  }
 
   let openAiTest = 'not tested';
   if (process.env.OPENAI_API_KEY) {
@@ -62,7 +59,6 @@ export async function GET() {
   return NextResponse.json({
     environment: process.env.NODE_ENV || 'unknown',
     envVarsSet: envVars,
-    keyPreview,
     openAiTest,
     whatsAppTest,
     advice: buildAdvice(envVars, openAiTest, whatsAppTest),
