@@ -55,7 +55,7 @@ export default function LoginPage() {
 
       if (data.otpFallback) {
         setOtpFallback(data.otpFallback);
-        setError(data.whapiError || 'WhatsApp unavailable');
+        setError(data.whatsappError || 'WhatsApp unavailable');
         return;
       }
 

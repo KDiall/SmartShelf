@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendOrderMessage } from '@/lib/whapi';
+import { sendOrderMessage } from '@/lib/whatsapp';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       ? `Order sent via ${method === 'sms' ? 'SMS' : 'WhatsApp'}`
       : 'Order recorded (WhatsApp unavailable — contact supplier manually)',
     items,
-    whapiSent: result.sent,
-    whapiError: result.error,
+    whatsappSent: result.sent,
+    whatsappError: result.error,
   });
 }

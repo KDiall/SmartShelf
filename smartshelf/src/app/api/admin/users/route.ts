@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendAccountCreatedMessage } from '@/lib/whapi';
+import { sendAccountCreatedMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
   const result = await sendAccountCreatedMessage(phone, name || null, otp);
 
   if (!result.sent) {
-    console.error(`[WHAPI FAIL] Account creation OTP for ${phone}: ${otp} | Error: ${result.error}`);
+    console.error(`[WHATSAPP FAIL] Account creation OTP for ${phone}: ${otp} | Error: ${result.error}`);
   } else {
     console.log(`[OTP] For new user ${phone}: ${otp}`);
   }
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       pharmacyId: user.pharmacyId,
     },
     otpSent: result.sent,
-    whapiError: result.error || null,
+    whatsappError: result.error || null,
   }, { status: 201 });
 }
 

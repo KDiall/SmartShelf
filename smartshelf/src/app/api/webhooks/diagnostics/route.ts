@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
-import { getWhatsAppStatus } from '@/lib/whapi';
+import { getWhatsAppStatus } from '@/lib/whatsapp';
 
 export async function GET() {
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
     WHATSAPP_API_KEY: !!(process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY),
-    WHATSAPP_SERVER_URL: process.env.WHAPI_BASE_URL || 'http://localhost:3700',
+    WHATSAPP_SERVER_URL: process.env.WHATSAPP_SERVER_URL || process.env.WHAPI_BASE_URL || 'http://localhost:3700',
     DATABASE_URL: !!process.env.DATABASE_URL,
     JWT_SECRET: !!process.env.JWT_SECRET,
     GENELINE_X_API_KEY: !!process.env.GENELINE_X_API_KEY,
@@ -83,7 +83,7 @@ function buildAdvice(
   }
 
   if (!envVars.WHATSAPP_API_KEY) {
-    advice.push('WHATSAPP_API_KEY (WHAPI_API_KEY) is NOT set. Add it to environment variables.');
+    advice.push('WHATSAPP_API_KEY is NOT set. Add it to environment variables.');
   }
 
   if (!envVars.DATABASE_URL) {

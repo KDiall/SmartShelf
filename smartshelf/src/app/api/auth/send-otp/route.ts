@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendOtpMessage } from '@/lib/whapi';
+import { sendOtpMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const result = await sendOtpMessage(phone, otp);
 
   if (!result.sent) {
-    console.error(`[WHAPI FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
+    console.error(`[WHATSAPP FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
   } else {
     console.log(`[OTP] For ${phone}: ${otp}`);
   }
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
     message: result.sent
       ? 'OTP sent via WhatsApp'
       : `WhatsApp unavailable: ${result.error || 'unknown error'}`,
-    whapiSent: result.sent,
-    whapiError: result.error || null,
+    whatsappSent: result.sent,
+    whatsappError: result.error || null,
     otpFallback: result.sent ? null : otp,
   });
 }

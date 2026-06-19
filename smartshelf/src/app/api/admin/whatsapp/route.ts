@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppStatus, reconnectWhatsAppServer } from '@/lib/whapi';
+import { getWhatsAppStatus, reconnectWhatsAppServer } from '@/lib/whatsapp';
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
