@@ -7,6 +7,7 @@ const f = createUploadthing();
 async function verifyAuth(input: { token: string }) {
   const payload = await verifyToken(input.token);
   if (!payload) {
+    console.error('[UploadThing] verifyAuth failed: invalid token');
     throw new Error("Unauthorized: invalid token");
   }
   return { userId: payload.userId, role: payload.role };
@@ -14,8 +15,9 @@ async function verifyAuth(input: { token: string }) {
 
 async function verifyAdmin(input: { token: string }) {
   const result = await verifyAuth(input);
-  if (result.role !== "admin") {
-    throw new Error("Forbidden: admin role required");
+  if (result.role !== "admin" && result.role !== "super_admin") {
+    console.error(`[UploadThing] verifyAdmin failed: role=${result.role}`);
+    throw new Error("Forbidden: admin or super_admin role required");
   }
   return { userId: result.userId };
 }
