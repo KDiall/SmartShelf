@@ -1,13 +1,31 @@
 import { NextResponse } from 'next/server';
 import { generateResponse } from '@/lib/rag';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const expectedKey = process.env.WHATSAPP_API_KEY;
+  const apiKey = request.headers.get('x-api-key');
+
+  if (!expectedKey) {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  if (!apiKey || apiKey !== expectedKey) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   return NextResponse.json({ received: true });
 }
 
 export async function POST(request: Request) {
+  const expectedKey = process.env.WHATSAPP_API_KEY;
   const apiKey = request.headers.get('x-api-key');
-  if (process.env.WHATSAPP_API_KEY && apiKey !== process.env.WHATSAPP_API_KEY) {
+
+  if (!expectedKey) {
+    console.error('WHATSAPP_API_KEY is not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  if (!apiKey || apiKey !== expectedKey) {
     console.error('Unauthorized webhook attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

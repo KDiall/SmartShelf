@@ -5,7 +5,13 @@ import { getWhatsAppStatus } from '@/lib/whatsapp';
 export async function GET(request: Request) {
   const apiKey = request.headers.get('x-api-key');
   const expectedKey = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY;
-  if (expectedKey && apiKey !== expectedKey) {
+
+  if (!expectedKey) {
+    console.error('WHATSAPP_API_KEY is not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  if (!apiKey || apiKey !== expectedKey) {
     console.error('Unauthorized diagnostics attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
