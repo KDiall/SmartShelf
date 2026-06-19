@@ -27,6 +27,7 @@ export default function BulkSalePage() {
   const [items, setItems] = useState<LineItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (token) loadData();
@@ -73,13 +74,25 @@ export default function BulkSalePage() {
     const validItems = items.filter((i) => i.medicineId && i.quantity > 0);
     if (validItems.length === 0) return;
 
+    const overStock = validItems.find((i) => i.quantity > i.maxStock);
+    if (overStock) {
+      setError(`Not enough stock for ${overStock.medicineName}: ${overStock.quantity} requested, ${overStock.maxStock} available.`);
+      return;
+    }
+
+    setError('');
     setSaving(true);
-    await recordBulkSales(validItems.map((i) => ({ medicineId: i.medicineId, quantity: i.quantity })));
-    setSaving(false);
-    setDone(true);
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+    try {
+      await recordBulkSales(validItems.map((i) => ({ medicineId: i.medicineId, quantity: i.quantity })));
+      setDone(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to record sale');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const selectStyles = {
@@ -133,6 +146,12 @@ export default function BulkSalePage() {
             <p className="text-sm text-muted-foreground">
               Record multiple sales at once. Select medicines and enter quantities.
             </p>
+
+            {error && (
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
             {items.length > 0 && (
               <div className="space-y-3">
@@ -201,7 +220,7 @@ export default function BulkSalePage() {
                           />
                           <button
                             onClick={() =>
-                              updateItem(item.id, 'quantity', item.quantity + 1)
+                              updateItem(item.id, 'quantity', Math.min(item.quantity + 1, item.maxStock || 1))
                             }
                             className="h-10 w-10 rounded-xl bg-secondary/50 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-secondary/80 transition-colors"
                           >

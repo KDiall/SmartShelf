@@ -70,6 +70,14 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
   },
 
   recordSale: async (medicineId, quantity = 1) => {
+    const medicine = await idb.medicines.get(medicineId);
+    if (!medicine) throw new Error('Medicine not found');
+    if (quantity > medicine.currentStock) {
+      throw new Error(
+        `Not enough stock for ${medicine.name}: ${quantity} requested, ${medicine.currentStock} available.`
+      );
+    }
+
     const sale: Sale = {
       id: crypto.randomUUID(),
       medicineId,
@@ -82,12 +90,9 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
 
     await idb.pendingSales.put(sale);
 
-    const medicine = await idb.medicines.get(medicineId);
-    if (!medicine) return;
-
     const updated: Medicine = {
       ...medicine,
-      currentStock: Math.max(0, medicine.currentStock - quantity),
+      currentStock: medicine.currentStock - quantity,
       updatedAt: new Date().toISOString(),
     };
     await idb.medicines.put(updated);
@@ -101,6 +106,16 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
 
   recordBulkSales: async (items) => {
     await idb.transaction('rw', idb.pendingSales, idb.medicines, async () => {
+      for (const { medicineId, quantity } of items) {
+        const medicine = await idb.medicines.get(medicineId);
+        if (!medicine) throw new Error('Medicine not found');
+        if (quantity > medicine.currentStock) {
+          throw new Error(
+            `Not enough stock for ${medicine.name}: ${quantity} requested, ${medicine.currentStock} available.`
+          );
+        }
+      }
+
       for (const { medicineId, quantity } of items) {
         const sale: Sale = {
           id: crypto.randomUUID(),
@@ -117,7 +132,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
         if (medicine) {
           const updated: Medicine = {
             ...medicine,
-            currentStock: Math.max(0, medicine.currentStock - quantity),
+            currentStock: medicine.currentStock - quantity,
             updatedAt: new Date().toISOString(),
           };
           await idb.medicines.put(updated);
