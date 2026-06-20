@@ -14,27 +14,27 @@ SET "phone" = '232' || "phone"
 WHERE "phone" !~ '^232' AND length("phone") = 8;
 
 -- Handle super admin phone change carefully.
--- If both old and new super admin users exist, merge references into the new user and delete the old.
--- If only the old user exists, rename it.
--- If only the new user exists, nothing to do.
+-- If a user with the target admin phone exists, make that user the super admin and merge old super admin data into it.
+-- If only the old super admin exists, rename it to the target phone.
 DO $$
 DECLARE
-  old_user_id TEXT;
-  new_user_id TEXT;
+  old_admin_id TEXT;
+  target_user_id TEXT;
 BEGIN
-  SELECT id INTO old_user_id FROM "User" WHERE "phone" = '23276000000' AND "role" = 'super_admin';
-  SELECT id INTO new_user_id FROM "User" WHERE "phone" = '23231569311' AND "role" = 'super_admin';
+  SELECT id INTO old_admin_id FROM "User" WHERE "phone" = '23276000000' AND "role" = 'super_admin';
+  SELECT id INTO target_user_id FROM "User" WHERE "phone" = '23231569311';
 
-  IF old_user_id IS NOT NULL THEN
-    IF new_user_id IS NOT NULL THEN
-      -- Merge references to the new super admin so nothing is orphaned.
-      UPDATE "Medicine" SET "userId" = new_user_id WHERE "userId" = old_user_id;
-      UPDATE "Sale" SET "userId" = new_user_id WHERE "userId" = old_user_id;
-      UPDATE "Guideline" SET "userId" = new_user_id WHERE "userId" = old_user_id;
-      UPDATE "User" SET "createdBy" = new_user_id WHERE "createdBy" = old_user_id;
-      DELETE FROM "User" WHERE id = old_user_id;
+  IF old_admin_id IS NOT NULL THEN
+    IF target_user_id IS NOT NULL THEN
+      -- Make the target user the super admin and merge old super admin references into it.
+      UPDATE "User" SET "role" = 'super_admin', "pharmacyId" = NULL WHERE id = target_user_id;
+      UPDATE "Medicine" SET "userId" = target_user_id WHERE "userId" = old_admin_id;
+      UPDATE "Sale" SET "userId" = target_user_id WHERE "userId" = old_admin_id;
+      UPDATE "Guideline" SET "userId" = target_user_id WHERE "userId" = old_admin_id;
+      UPDATE "User" SET "createdBy" = target_user_id WHERE "createdBy" = old_admin_id;
+      DELETE FROM "User" WHERE id = old_admin_id;
     ELSE
-      UPDATE "User" SET "phone" = '23231569311' WHERE id = old_user_id;
+      UPDATE "User" SET "phone" = '23231569311' WHERE id = old_admin_id;
     END IF;
   END IF;
 END $$;
