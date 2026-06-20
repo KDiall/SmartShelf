@@ -94,7 +94,7 @@ export default function LoginPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+23276000000"
+                  placeholder="+23231569311"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required

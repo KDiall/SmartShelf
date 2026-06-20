@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   const supplierPhone =
-    process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23276000000';
+    process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23231569311';
 
   const result = await sendOrderMessage(supplierPhone, items);
 

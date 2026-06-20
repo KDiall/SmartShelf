@@ -253,7 +253,7 @@ export default function AdminUsersPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+23276000000"
+                  placeholder="+23231569311"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   required

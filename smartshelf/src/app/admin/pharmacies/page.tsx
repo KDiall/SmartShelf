@@ -237,7 +237,7 @@ export default function AdminPharmaciesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="+23276000000" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                <Input id="phone" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
               </div>
               <Button type="submit" disabled={creating || !newName} className="w-full">
                 {creating ? 'Creating...' : 'Create Pharmacy'}

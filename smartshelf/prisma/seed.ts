@@ -11,7 +11,7 @@ async function seed() {
   console.log('Starting database seed...');
 
   // 1. Platform owner (super admin) - NOT tied to any pharmacy.
-  const superAdminPhone = normalizePhone('+23276000000');
+  const superAdminPhone = normalizePhone('+23231569311');
   let superAdmin = await prisma.user.findUnique({ where: { phone: superAdminPhone } });
   if (!superAdmin) {
     superAdmin = await prisma.user.create({
@@ -39,7 +39,7 @@ async function seed() {
       data: {
         name: 'Main Branch',
         address: '123 Health Way, Freetown',
-        phone: '+23276000000',
+        phone: '+23231569311',
       },
     });
     console.log('Seeded demo pharmacy');
