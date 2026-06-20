@@ -6,14 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import { normalizePhone } from '@/lib/phone';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [otpFallback, setOtpFallback] = useState('');
   const router = useRouter();
   const { isAuthenticated, loadFromStorage } = useAuthStore();
 
@@ -31,7 +29,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setOtpFallback('');
 
     const normalizedPhone = normalizePhone(phone);
     if (!normalizedPhone) {
@@ -51,12 +48,6 @@ export default function LoginPage() {
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to send OTP');
-      }
-
-      if (data.otpFallback) {
-        setOtpFallback(data.otpFallback);
-        setError(data.whatsappError || 'WhatsApp unavailable');
-        return;
       }
 
       router.push(`/verify?phone=${encodeURIComponent(normalizedPhone)}`);
@@ -105,25 +96,9 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {error && !otpFallback && (
+              {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                   <p className="text-sm text-red-700 font-medium">{error}</p>
-                </div>
-              )}
-
-              {otpFallback && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
-                  <p className="text-sm text-amber-800 font-bold">WhatsApp unavailable</p>
-                  <p className="text-xs text-amber-700 font-medium">Use this OTP code to log in:</p>
-                  <p className="text-3xl font-black text-center text-amber-900 tracking-[0.3em]">{otpFallback}</p>
-                  <p className="text-xs text-amber-600 text-center font-medium">Expires in 5 minutes</p>
-                  <Button
-                    onClick={() => router.push(`/verify?phone=${encodeURIComponent(normalizePhone(phone))}`)}
-                    className="w-full mt-2 rounded-xl h-11 font-bold"
-                    size="lg"
-                  >
-                    Enter OTP
-                  </Button>
                 </div>
               )}
 

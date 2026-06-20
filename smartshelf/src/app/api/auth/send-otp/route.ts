@@ -33,16 +33,12 @@ export async function POST(request: Request) {
 
   if (!result.sent) {
     console.error(`[WHATSAPP FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
-  } else {
-    console.log(`[OTP] For ${phone}: ${otp}`);
+    return NextResponse.json(
+      { error: 'WhatsApp unavailable. Please try again or contact your admin.' },
+      { status: 503 }
+    );
   }
 
-  return NextResponse.json({
-    message: result.sent
-      ? 'OTP sent via WhatsApp'
-      : `WhatsApp unavailable: ${result.error || 'unknown error'}`,
-    whatsappSent: result.sent,
-    whatsappError: result.error || null,
-    otpFallback: result.sent ? null : otp,
-  });
+  console.log(`[OTP] For ${phone}: ${otp}`);
+  return NextResponse.json({ message: 'OTP sent via WhatsApp' });
 }
