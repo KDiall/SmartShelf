@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { normalizePhone } from '@/lib/phone';
 import { generateResponse } from '@/lib/rag';
 
 export async function GET(request: Request) {
@@ -53,9 +55,23 @@ export async function POST(request: Request) {
 
   console.log(`Processing msg from ${from}: "${text.slice(0, 100)}"`);
 
+  // Resolve sender's pharmacy from their phone number
+  const senderPhone = normalizePhone(from.split('@')[0]);
+  let pharmacyId: string | undefined;
+  try {
+    const sender = senderPhone
+      ? await prisma.user.findUnique({ where: { phone: senderPhone }, select: { pharmacyId: true } })
+      : null;
+    pharmacyId = sender?.pharmacyId ?? undefined;
+    console.log(`Sender phone=${senderPhone} pharmacyId=${pharmacyId || 'none (super_admin or unknown)'}`);
+  } catch (err) {
+    console.error('Failed to look up sender pharmacy:', err);
+    // fall through — generateResponse will see all data if pharmacyId is undefined
+  }
+
   let reply: string;
   try {
-    reply = await generateResponse(text);
+    reply = await generateResponse(text, pharmacyId);
     console.log(`AI response: "${reply.slice(0, 100)}"`);
   } catch (err) {
     reply = `Server error: ${err instanceof Error ? err.message : 'unknown error'}`;

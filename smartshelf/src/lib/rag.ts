@@ -3,14 +3,15 @@ import { embeddingsSearch, NAMESPACE } from './geneline';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
-export async function generateResponse(message: string): Promise<string> {
+export async function generateResponse(message: string, pharmacyId?: string): Promise<string> {
   if (!OPENAI_API_KEY) {
     return 'OpenAI is not configured. Set OPENAI_API_KEY in your environment.';
   }
 
   try {
-    // 1. Fetch Inventory Context
+    // 1. Fetch Inventory Context (scoped to pharmacy if provided)
     const medicines = await prisma.medicine.findMany({
+      where: pharmacyId ? { pharmacyId } : undefined,
       orderBy: { name: 'asc' },
       select: {
         name: true,
