@@ -238,15 +238,15 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Clean up Chrome lock files from previous runs to prevent
-  // "profile appears to be in use by another Chrome process" errors.
+  const CHROME_USER_DATA = process.env.CHROME_USER_DATA_DIR || '/data/chrome-profile';
+
+  // Clean up Chrome lock files from a previous unclean shutdown so Chrome
+  // does not refuse to start with "profile appears to be in use".
   try {
-    require('child_process').execSync('pkill -f chrome || true');
-    // Also remove any Chrome lock files in the session directory
-    const lockFiles = path.join(SESSION_DIR, 'SingletonLock');
-    if (fs.existsSync(lockFiles)) fs.unlinkSync(lockFiles);
-    const socketFile = path.join(SESSION_DIR, 'SingletonSocket');
-    if (fs.existsSync(socketFile)) fs.unlinkSync(socketFile);
+    for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
+      const p = path.join(CHROME_USER_DATA, name);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
   } catch (e) {}
 
   const client = new Client({
@@ -260,7 +260,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-gpu',
         '--single-process',
         '--no-zygote',
-        '--user-data-dir=/tmp/chrome-user-data',
+        `--user-data-dir=${CHROME_USER_DATA}`,
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
