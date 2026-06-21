@@ -298,6 +298,29 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   }
 }
 
+app.post('/send-whatsapp', requireApiKey, async (req, res) => {
+  const client = clients.get(getChatbotId());
+  if (!client || !client.info?.wid?.user) {
+    return res.status(503).json({ error: 'WhatsApp client not connected' });
+  }
+
+  const { phoneE164, message } = req.body;
+  if (!phoneE164 || !message) {
+    return res.status(400).json({ error: 'phoneE164 and message are required' });
+  }
+
+  console.log(`[send-whatsapp] Sending to ${phoneE164}`);
+  const result = await sendMessageDirectly(client, phoneE164, message);
+
+  if (!result.success) {
+    console.error(`[send-whatsapp] Failed to ${phoneE164}: ${result.error}`);
+    return res.status(500).json({ error: result.error });
+  }
+
+  console.log(`[send-whatsapp] Delivered to ${phoneE164}`, result.jid);
+  res.json({ status: 'sent', jid: result.jid });
+});
+
 app.get('/api/brand', (req, res) => {
   res.json({ name: process.env.BRAND_NAME || 'WhatsApp Client', tagline: process.env.BRAND_TAGLINE || 'AI Assistant' });
 });
