@@ -138,19 +138,29 @@ async function safeSendMessage(client, to, text) {
 }
 
 async function resolveJID(client, identifier) {
-  try {
-    if (identifier.includes('@')) {
-      try {
-        const contact = await client.getContactById(identifier);
-        if (contact && contact.id && contact.id._serialized) return contact.id._serialized;
-        if (contact && contact.number) return `${contact.number}@c.us`;
-      } catch (e) {}
-      return identifier;
-    }
-    const cleaned = identifier.replace(/[^\d]/g, '');
-    return `${cleaned}@c.us`;
-  } catch (error) {
+  if (identifier.includes('@')) {
+    try {
+      const contact = await client.getContactById(identifier);
+      if (contact && contact.id && contact.id._serialized) return contact.id._serialized;
+      if (contact && contact.number) return `${contact.number}@c.us`;
+    } catch (e) {}
     return identifier;
+  }
+
+  const cleaned = identifier.replace(/[^\d]/g, '');
+
+  // Ask WhatsApp for the real serialized JID. WhatsApp's internal id can differ
+  // from `${number}@c.us`, so blindly appending it only works for some numbers
+  // (e.g. saved contacts). getNumberId resolves the correct JID for any number
+  // that is actually registered on WhatsApp.
+  try {
+    const wid = await client.getNumberId(cleaned);
+    if (wid && wid._serialized) return wid._serialized;
+    throw new Error(`Number +${cleaned} is not registered on WhatsApp`);
+  } catch (error) {
+    if (error && /not registered on WhatsApp/.test(error.message || '')) throw error;
+    // getNumberId itself failed (transient); fall back to the naive JID.
+    return `${cleaned}@c.us`;
   }
 }
 
