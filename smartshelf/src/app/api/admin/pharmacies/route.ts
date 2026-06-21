@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendAccountCreatedMessage } from '@/lib/whatsapp';
+import { normalizePhone } from '@/lib/phone';
+import crypto from 'crypto';
+
+function generateOtp(): string {
+  return crypto.randomInt(100000, 999999).toString();
+}
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
@@ -23,17 +30,60 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { name, address, phone } = await request.json();
+  const { name, phone: rawPhone, adminName } = await request.json();
+  const currentUserId = request.headers.get('x-user-id');
 
   if (!name || typeof name !== 'string') {
     return NextResponse.json({ error: 'Pharmacy name is required' }, { status: 400 });
   }
 
+  if (!rawPhone || typeof rawPhone !== 'string') {
+    return NextResponse.json({ error: 'Admin phone number is required' }, { status: 400 });
+  }
+
+  const phone = normalizePhone(rawPhone);
+  if (!phone) {
+    return NextResponse.json({ error: 'A valid admin phone number is required' }, { status: 400 });
+  }
+
+  // The admin logs in with this number, so it must be unique across all users.
+  const existing = await prisma.user.findUnique({ where: { phone } });
+  if (existing) {
+    return NextResponse.json({ error: 'A user with this phone number already exists' }, { status: 409 });
+  }
+
+  // Create the pharmacy and its admin together so the branch is usable immediately.
   const pharmacy = await prisma.pharmacy.create({
-    data: { name, address: address || null, phone: phone || null },
+    data: { name, address: null, phone },
   });
 
-  return NextResponse.json(pharmacy, { status: 201 });
+  const admin = await prisma.user.create({
+    data: {
+      phone,
+      name: adminName || null,
+      role: 'admin',
+      verified: false,
+      createdBy: currentUserId,
+      pharmacyId: pharmacy.id,
+    },
+  });
+
+  // Send the admin their first login OTP.
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  await prisma.otp.create({ data: { phone, code: otp, expiresAt } });
+
+  const result = await sendAccountCreatedMessage(phone, admin.name, otp);
+  if (!result.sent) {
+    console.error(`[WHATSAPP FAIL] Pharmacy admin OTP for ${phone}: ${otp} | Error: ${result.error}`);
+  } else {
+    console.log(`[OTP] For pharmacy admin ${phone}: ${otp}`);
+  }
+
+  return NextResponse.json(
+    { ...pharmacy, adminPhone: phone, otpSent: result.sent, whatsappError: result.error || null },
+    { status: 201 }
+  );
 }
 
 export async function PUT(request: Request) {

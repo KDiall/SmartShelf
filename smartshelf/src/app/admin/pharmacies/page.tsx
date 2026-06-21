@@ -36,9 +36,10 @@ export default function AdminPharmaciesPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newAddress, setNewAddress] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -65,6 +66,7 @@ export default function AdminPharmaciesPage() {
     e.preventDefault();
     if (!token) return;
     setCreating(true);
+    setCreateError('');
     try {
       const res = await fetch('/api/admin/pharmacies', {
         method: 'POST',
@@ -72,17 +74,17 @@ export default function AdminPharmaciesPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName, address: newAddress, phone: newPhone }),
+        body: JSON.stringify({ name: newName, phone: newPhone, adminName: newAdminName }),
       });
-      if (!res.ok) throw new Error('Failed to create pharmacy');
       const created = await res.json();
-      setPharmacies((prev) => [{ ...created, _count: { users: 0, medicines: 0, sales: 0 } }, ...prev]);
+      if (!res.ok) throw new Error(created.error || 'Failed to create pharmacy');
+      setPharmacies((prev) => [{ ...created, _count: { users: 1, medicines: 0, sales: 0 } }, ...prev]);
       setShowAddModal(false);
       setNewName('');
-      setNewAddress('');
+      setNewAdminName('');
       setNewPhone('');
     } catch (err) {
-      console.error(err);
+      setCreateError(err instanceof Error ? err.message : 'Failed to create pharmacy');
     } finally {
       setCreating(false);
     }
@@ -224,7 +226,7 @@ export default function AdminPharmaciesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Pharmacy Branch</DialogTitle>
-              <DialogDescription>Create a new pharmacy. You can assign an admin to it later.</DialogDescription>
+              <DialogDescription>Enter the pharmacy name and the admin&apos;s WhatsApp number. The admin will use this number to log in.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
@@ -232,14 +234,20 @@ export default function AdminPharmaciesPage() {
                 <Input id="name" placeholder="e.g. Main Branch" value={newName} onChange={(e) => setNewName(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" placeholder="e.g. 123 Health Way, Freetown" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
+                <Label htmlFor="adminName">Admin Name</Label>
+                <Input id="adminName" placeholder="e.g. Mohamed Kamara" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                <Label htmlFor="phone">Admin WhatsApp Number *</Label>
+                <Input id="phone" type="tel" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required />
+                <p className="text-xs text-muted-foreground">The admin will log in with this number and receive their OTP here.</p>
               </div>
-              <Button type="submit" disabled={creating || !newName} className="w-full">
+              {createError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700 font-medium">{createError}</p>
+                </div>
+              )}
+              <Button type="submit" disabled={creating || !newName || !newPhone} className="w-full">
                 {creating ? 'Creating...' : 'Create Pharmacy'}
               </Button>
             </form>
