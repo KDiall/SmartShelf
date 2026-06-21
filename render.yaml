@@ -1,0 +1,44 @@
+# Render Blueprint for the SmartShelf WhatsApp server.
+# Deploy via Render dashboard: New > Blueprint, then select the KDiall/SmartShelf repo.
+# After it deploys, open https://<service-url>/connect/<bot-number> and scan the QR.
+services:
+  - type: web
+    name: smartshelf-whatsapp
+    runtime: docker
+    # Paths are relative to the repository root (this file's location).
+    dockerfilePath: ./smartshelf/whatsapp-server/Dockerfile
+    dockerContext: ./smartshelf/whatsapp-server
+    # 'starter' keeps the service awake (required: WhatsApp sessions drop when a
+    # free instance sleeps, and persistent disks need a paid plan).
+    plan: starter
+    region: oregon
+    # Unauthenticated endpoint used for Render health checks.
+    healthCheckPath: /api/brand
+    # Persistent disk so the WhatsApp session survives restarts/deploys.
+    disk:
+      name: wwebjs-session
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      # The bot's WhatsApp number in E.164 format (the number you scan the QR with).
+      - key: CLIENT_PHONE_E164
+        sync: false
+      # SmartShelf webhook URL (https://<your-app>.vercel.app/api/webhooks/whatsapp).
+      - key: AGENT_URL
+        sync: false
+      # Must match SmartShelf's WHATSAPP_API_KEY (webhook auth).
+      - key: AGENT_API_KEY
+        sync: false
+      # Must match SmartShelf's WHATSAPP_API_KEY (/send-whatsapp auth).
+      - key: API_KEY
+        sync: false
+      # Store the WhatsApp session on the persistent disk mounted above.
+      - key: SESSION_DIR
+        value: /data/.wwebjs_auth
+      # Render's network can block the startup HEAD check to web.whatsapp.com.
+      - key: SKIP_NETWORK_CHECK
+        value: "true"
+      - key: BRAND_NAME
+        value: SmartShelf
+      - key: BRAND_TAGLINE
+        value: AI Assistant

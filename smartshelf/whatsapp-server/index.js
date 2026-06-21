@@ -33,6 +33,14 @@ const getAgentUrl = () => (process.env.AGENT_URL || process.env.WHATSAPP_AGENT_U
 const getAgentApiKey = () => (process.env.AGENT_API_KEY || process.env.WHATSAPP_API_KEY || '').trim();
 const getApiKey = () => (process.env.API_KEY || process.env.WHATSAPP_API_KEY || '').trim();
 
+// Where WhatsApp session data is stored. On hosts with an ephemeral filesystem
+// (e.g. Render without a disk), point SESSION_DIR at a mounted persistent disk
+// so the bot does not need re-linking after every restart/deploy.
+const SESSION_DIR = (process.env.SESSION_DIR || path.join(__dirname, '.wwebjs_auth')).trim();
+// Chromium binary for Puppeteer. The puppeteer Docker base image provides this
+// via PUPPETEER_EXECUTABLE_PATH; fall back to Puppeteer's own resolution locally.
+const CHROME_PATH = (process.env.PUPPETEER_EXECUTABLE_PATH || '').trim();
+
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
   console.log('Received SIGINT, shutting down gracefully...');
@@ -197,7 +205,7 @@ function stopHealthMonitoring(chatbotId) {
 
 async function clearSession(chatbotId) {
   try {
-    const sessionPath = path.join(__dirname, '.wwebjs_auth', `session-${String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_')}`);
+    const sessionPath = path.join(SESSION_DIR, `session-${String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_')}`);
     if (fs.existsSync(sessionPath)) fs.rmSync(sessionPath, { recursive: true, force: true });
   } catch (e) {}
 }
@@ -220,8 +228,12 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
   const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
+    puppeteer: {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
+    },
   });
 
   client.on('qr', async (qr) => {
