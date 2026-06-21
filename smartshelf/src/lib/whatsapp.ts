@@ -1,4 +1,4 @@
-const WHATSAPP_SERVER_URL = (process.env.WHATSAPP_SERVER_URL || process.env.WHAPI_BASE_URL || 'http://localhost:3700').replace(/\/$/, '');
+const WHATSAPP_SERVER_URL = (process.env.WHATSAPP_SERVER_URL || process.env.WHAPI_BASE_URL || 'http://localhost:3700').trim().replace(/\/+$/, '');
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY || '';
 
 interface WhatsAppResponse {
