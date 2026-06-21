@@ -361,8 +361,6 @@ app.get('/connect/:phoneE164', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'connect.html'));
 });
 
-initializeClient().catch(e => console.error('Init failed:', e.message));
-
 app.post('/init', requireApiKey, async (req, res) => {
   try { res.json(await initializeClient()); } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -405,8 +403,16 @@ app.post('/reset-session', requireApiKey, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/healthz', (req, res) => {
+  res.status(200).send('ok');
+});
+
 const PORT = process.env.PORT || 3700;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
 });
+
+// Initialize WhatsApp AFTER server is already listening so Render's
+// health check succeeds immediately (prevents endless restart loop).
+initializeClient().catch(e => console.error('Init failed:', e.message));
