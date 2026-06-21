@@ -109,6 +109,7 @@ const qrCodes = new Map();
 const clients = new Map();
 const sessionHealthChecks = new Map();
 const HEALTH_CHECK_INTERVAL = 30000;
+let initializing = false;
 
 // Message queue helper functions
 async function sendMessageDirectly(client, phoneE164, message) {
@@ -225,11 +226,18 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   const chatbotId = getChatbotId();
   if (!chatbotId) throw new Error('CLIENT_PHONE_E164 (or WHATSAPP_CLIENT_PHONE) is not set in .env');
 
+  if (retryCount === 0 && initializing) {
+    return { status: 'initializing', message: 'Already initializing, please wait' };
+  }
+  initializing = true;
+
+  try {
+
   if (clients.has(chatbotId)) {
     const client = clients.get(chatbotId);
     try {
-      if (client?.info?.wid?.user) return { status: 'connected', phoneNumber: client.info.wid.user };
-      if (qrCodes.has(chatbotId)) return { status: 'awaiting_qr', qr: qrCodes.get(chatbotId)?.base64 };
+      if (client?.info?.wid?.user) { initializing = false; return { status: 'connected', phoneNumber: client.info.wid.user }; }
+      if (qrCodes.has(chatbotId)) { initializing = false; return { status: 'awaiting_qr', qr: qrCodes.get(chatbotId)?.base64 }; }
     } catch (e) {
       clients.delete(chatbotId);
       if (client) await client.destroy().catch(() => {});
@@ -239,6 +247,9 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
   const CHROME_USER_DATA = process.env.CHROME_USER_DATA_DIR || '/data/chrome-profile';
+
+  // Ensure Chrome user-data directory exists
+  try { fs.mkdirSync(CHROME_USER_DATA, { recursive: true }); } catch (e) {}
 
   // Clean up Chrome lock files from a previous unclean shutdown so Chrome
   // does not refuse to start with "profile appears to be in use".
@@ -343,9 +354,15 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   try {
     await client.initialize();
     clients.set(chatbotId, client);
+    initializing = false;
     return { status: 'initialized' };
   } catch (error) {
-    if (retryCount < maxRetries - 1) return initializeClient(retryCount + 1, maxRetries);
+    if (retryCount < maxRetries - 1) {
+      await new Promise(r => setTimeout(r, 3000));
+      initializing = false;
+      return initializeClient(retryCount + 1, maxRetries);
+    }
+    initializing = false;
     throw error;
   }
 }
@@ -431,6 +448,21 @@ app.post('/reset-session', requireApiKey, async (req, res) => {
 
 app.get('/healthz', (req, res) => {
   res.status(200).send('ok');
+});
+
+app.get('/debug-env', (req, res) => {
+  res.json({
+    sessionDir: SESSION_DIR,
+    chromeUserData: process.env.CHROME_USER_DATA_DIR || '/data/chrome-profile',
+    clientPhone: getChatbotId(),
+    connected: !!clients.get(getChatbotId())?.info?.wid?.user,
+    hasQr: qrCodes.has(getChatbotId()),
+    initializing,
+    nodeEnv: process.env.NODE_ENV,
+    port: process.env.PORT,
+    chromePath: process.env.CHROME_PATH || 'not set',
+    skipNetworkCheck: !!process.env.SKIP_NETWORK_CHECK,
+  });
 });
 
 const PORT = process.env.PORT || 3700;
