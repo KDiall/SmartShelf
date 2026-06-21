@@ -1,23 +1,60 @@
-# Use a Node.js image with Chromium dependencies for Puppeteer
-FROM ghcr.io/puppeteer/puppeteer:latest
+# Use a stable Node.js image and install Google Chrome ourselves.
+# The official puppeteer/puppeteer:latest image no longer bundles the exact
+# Chrome version Puppeteer expects, which causes "Could not find Chrome" errors.
+FROM node:20-slim
 
-USER root
+# Install Chrome dependencies and utilities
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    libu2f-udev \
+    libvulkan1 \
+    libgbm1 \
+    libxss1 \
+    libgtk-3-0 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Google Chrome Stable
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Prevent puppeteer from downloading its own Chrome during npm install.
+# We already installed the system Chrome above.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV SESSION_DIR=/data/.wwebjs_auth
+
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the application
 COPY . .
 
-# Create directory for session storage
-RUN mkdir -p .wwebjs_auth && chown -R pptruser:pptruser .wwebjs_auth
+# Create session directory on the persistent disk Render mounts at /data
+RUN mkdir -p /data/.wwebjs_auth && chmod -R 777 /data
 
-# Use the non-root user from the base image
-USER pptruser
-
-EXPOSE 3700
+# Render expects services to listen on port 10000 by default
+EXPOSE 10000
 
 CMD ["node", "index.js"]
