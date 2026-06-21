@@ -45,7 +45,6 @@ WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV SESSION_DIR=/data/.wwebjs_auth
-ENV CHROME_USER_DATA_DIR=/data/chrome-profile
 ENV SKIP_NETWORK_CHECK=true
 ENV NODE_OPTIONS=--max-old-space-size=1536
 
@@ -55,7 +54,7 @@ RUN npm install
 COPY . .
 
 # Create session directory on the persistent disk Render mounts at /data
-RUN mkdir -p /data/.wwebjs_auth /data/chrome-profile && chmod -R 777 /data
+RUN mkdir -p /data/.wwebjs_auth && chmod -R 777 /data
 
 # Render expects services to listen on port 10000 by default
 EXPOSE 10000
