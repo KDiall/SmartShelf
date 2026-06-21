@@ -27,6 +27,13 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
+// Prevent the entire process from dying when Puppeteer/Chrome crashes.
+// Render health checks will surface the issue, but the server stays up
+// so the /init endpoint can be called again to retry.
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception (server continues):', err.message);
+});
+
 // Helpers for robust environment variable access (supporting your env.txt names)
 const getChatbotId = () => (process.env.CLIENT_PHONE_E164 || process.env.WHATSAPP_CLIENT_PHONE || '').trim();
 const getAgentUrl = () => (process.env.AGENT_URL || process.env.WHATSAPP_AGENT_URL || 'http://localhost:3001').trim().replace(/\/+$/, '');
@@ -235,7 +242,14 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
     puppeteer: {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+      ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
   });
@@ -413,6 +427,8 @@ server.listen(PORT, () => {
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
 });
 
-// Initialize WhatsApp AFTER server is already listening so Render's
-// health check succeeds immediately (prevents endless restart loop).
-initializeClient().catch(e => console.error('Init failed:', e.message));
+// Initialize WhatsApp after a short delay so Render's health check
+// succeeds immediately and the container is fully ready.
+setTimeout(() => {
+  initializeClient().catch(e => console.error('Init failed:', e.message));
+}, 3000);
