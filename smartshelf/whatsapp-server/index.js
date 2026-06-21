@@ -238,6 +238,17 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
+  // Clean up Chrome lock files from previous runs to prevent
+  // "profile appears to be in use by another Chrome process" errors.
+  try {
+    require('child_process').execSync('pkill -f chrome || true');
+    // Also remove any Chrome lock files in the session directory
+    const lockFiles = path.join(SESSION_DIR, 'SingletonLock');
+    if (fs.existsSync(lockFiles)) fs.unlinkSync(lockFiles);
+    const socketFile = path.join(SESSION_DIR, 'SingletonSocket');
+    if (fs.existsSync(socketFile)) fs.unlinkSync(socketFile);
+  } catch (e) {}
+
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
     puppeteer: {
@@ -249,6 +260,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-gpu',
         '--single-process',
         '--no-zygote',
+        '--user-data-dir=/tmp/chrome-user-data',
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
