@@ -156,6 +156,7 @@ async function resolveJID(client, identifier) {
   }
 
   const cleaned = identifier.replace(/[^\d]/g, '');
+  const naiveJID = `${cleaned}@c.us`;
 
   // Ask WhatsApp for the real serialized JID. WhatsApp's internal id can differ
   // from `${number}@c.us`, so blindly appending it only works for some numbers
@@ -163,13 +164,16 @@ async function resolveJID(client, identifier) {
   // that is actually registered on WhatsApp.
   try {
     const wid = await client.getNumberId(cleaned);
-    if (wid && wid._serialized) return wid._serialized;
-    throw new Error(`Number +${cleaned} is not registered on WhatsApp`);
+    if (wid && wid._serialized) {
+      console.log(`[resolveJID] Resolved ${cleaned} -> ${wid._serialized}`);
+      return wid._serialized;
+    }
+    console.log(`[resolveJID] getNumberId returned null for ${cleaned}; falling back to ${naiveJID}`);
   } catch (error) {
-    if (error && /not registered on WhatsApp/.test(error.message || '')) throw error;
-    // getNumberId itself failed (transient); fall back to the naive JID.
-    return `${cleaned}@c.us`;
+    console.warn(`[resolveJID] getNumberId failed for ${cleaned}: ${error.message || error}; falling back to ${naiveJID}`);
   }
+
+  return naiveJID;
 }
 
 async function checkNetwork() {
