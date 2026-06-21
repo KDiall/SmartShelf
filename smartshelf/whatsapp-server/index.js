@@ -310,15 +310,14 @@ app.post('/send-whatsapp', requireApiKey, async (req, res) => {
   }
 
   console.log(`[send-whatsapp] Sending to ${phoneE164}`);
-  const result = await sendMessageDirectly(client, phoneE164, message);
-
-  if (!result.success) {
-    console.error(`[send-whatsapp] Failed to ${phoneE164}: ${result.error}`);
-    return res.status(500).json({ error: result.error });
+  try {
+    const result = await safeSendMessage(client, phoneE164, message);
+    console.log(`[send-whatsapp] Delivered to ${phoneE164}`, result.to);
+    res.json({ status: 'sent', jid: result.to });
+  } catch (err) {
+    console.error(`[send-whatsapp] Failed to ${phoneE164}: ${err.message}`);
+    res.status(500).json({ error: err.message });
   }
-
-  console.log(`[send-whatsapp] Delivered to ${phoneE164}`, result.jid);
-  res.json({ status: 'sent', jid: result.jid });
 });
 
 app.get('/api/brand', (req, res) => {
