@@ -231,8 +231,6 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   }
   initializing = true;
 
-  try {
-
   if (clients.has(chatbotId)) {
     const client = clients.get(chatbotId);
     try {
