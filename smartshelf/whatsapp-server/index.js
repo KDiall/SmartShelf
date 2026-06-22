@@ -110,7 +110,7 @@ const requireApiKey = (req, res, next) => {
 const qrCodes = new Map();
 const clients = new Map();
 const sessionHealthChecks = new Map();
-const HEALTH_CHECK_INTERVAL = 60000;
+const HEALTH_CHECK_INTERVAL = 120000;
 let initializing = false;
 
 // MongoDB session schema for RemoteAuth persistence
@@ -250,10 +250,14 @@ function startHealthMonitoring(chatbotId, client) {
   const healthCheck = setInterval(async () => {
     try {
       const state = await client.getState().catch(() => null);
-      if (state && !['UNPAIRED', 'UNPAIRED_IDLE', 'CONFLICT', 'UNLAUNCHED'].includes(state)) {
-        await client.sendPresenceAvailable().catch(() => {});
+      if (state && ['UNPAIRED', 'UNPAIRED_IDLE', 'CONFLICT', 'UNLAUNCHED'].includes(state)) {
+        console.warn(`[health] ${chatbotId} state=${state}`);
       }
     } catch (e) {}
+    // Periodic memory hint
+    if (global.gc && typeof global.gc === 'function') {
+      try { global.gc(); } catch (e) {}
+    }
   }, HEALTH_CHECK_INTERVAL);
   sessionHealthChecks.set(chatbotId, healthCheck);
 }
@@ -313,7 +317,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
       store: mongoStore,
       clientId: safeClientId,
       dataPath: SESSION_DIR,
-      backupSyncIntervalMs: 60000,
+      backupSyncIntervalMs: 300000,
     }),
     takeoverOnConflict: true,
     takeoverTimeoutMs: 30000,
@@ -339,12 +343,23 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
         '--disable-component-extensions-with-background-pages',
-        '--disable-features=ChromeWhatsNewUI,TranslateUI,MediaRouter,DialMediaRouteProvider',
-        '--js-flags=--max_old_space_size=256',
-        '--memory-pressure-off',
+        '--disable-features=ChromeWhatsNewUI,TranslateUI,MediaRouter,DialMediaRouteProvider,VizDisplayCompositor,UseSkiaRenderer',
         '--disable-ipc-flooding-protection',
         '--aggressive-cache-discard',
         '--disable-backgrounding-occluded-windows',
+        '--disable-remote-fonts',
+        '--disable-webfonts',
+        '--disable-speech-api',
+        '--disable-features=InterestFeedContentSuggestions,ChromeWhatsNewUI',
+        '--disable-permissions-api',
+        '--disable-site-isolation-trials',
+        '--disable-web-security',
+        '--disable-accelerated-2d-canvas',
+        '--disable-canvas-aa',
+        '--disable-2d-canvas-clip-aa',
+        '--disable-reading-from-canvas',
+        '--deterministic-fetch',
+        '--max_old_space_size=256',
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
@@ -607,6 +622,7 @@ const PORT = process.env.PORT || 3700;
 server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
+  console.log('💡 To reduce memory, set Render env: NODE_OPTIONS=--max_old_space_size=256');
 
   // Connect to MongoDB first, then initialize WhatsApp
   await connectMongo();
