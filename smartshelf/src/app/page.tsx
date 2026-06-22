@@ -134,7 +134,7 @@ export default function HomePage() {
             </div>
             <Skeleton className="h-12 w-12 rounded-full shrink-0" />
           </div>
-          <Card className="glass-card rounded-3xl overflow-hidden">
+          <Card className="glass-card rounded-3xl overflow-hidden min-h-[280px]">
             <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
               <Skeleton className="h-[220px] w-[220px] rounded-full shrink-0" />
               <div className="flex-1 space-y-3 w-full">
@@ -174,7 +174,7 @@ export default function HomePage() {
           </div>
 
           {/* Hero Card */}
-          <Card className="glass-card rounded-3xl overflow-hidden active:scale-[0.99] transition-transform duration-150 entrance" style={{ animationDelay: '100ms' }}>
+          <Card className="glass-card rounded-3xl overflow-hidden active:scale-[0.99] transition-transform duration-150 entrance min-h-[280px]" style={{ animationDelay: '100ms' }}>
             <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
               <HealthRing score={healthScore} />
               <div className="flex-1 text-center md:text-left">
