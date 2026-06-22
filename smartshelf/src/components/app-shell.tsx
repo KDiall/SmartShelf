@@ -2,12 +2,11 @@
 import { useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Pill, ShoppingCart, BarChart3, Menu, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings, Store, Users } from 'lucide-react';
+import { Home, Pill, ShoppingCart, BarChart3, ChevronLeft, FileText, Loader2, AlertCircle, CheckCircle2, Settings, Store, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
 import { useSync } from '@/hooks/use-sync';
-import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -41,7 +40,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const syncStatus = usePharmacyStore((s) => s.syncStatus);
   const isOnline = usePharmacyStore((s) => s.isOnline);
   const retrySync = usePharmacyStore((s) => s.retrySync);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -166,49 +164,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-border">
           <div className="flex items-center justify-between h-14 px-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
-              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <button
-                  onClick={() => setMenuOpen(true)}
-                  className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-muted"
-                >
-                  <Menu className="h-6 w-6 text-primary" />
-                </button>
-                <SheetContent side="left" className="w-72 bg-primary text-primary-foreground border-r-0 p-0">
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <div className="flex items-center gap-2">
-                      <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-8 w-8 rounded-lg" />
-                      <span className="font-bold text-lg">SmartShelf</span>
-                    </div>
-                  </div>
-
-                  <nav className="py-4 space-y-1 px-3">
-                    {visibleNav.map(({ href, label, Icon }) => {
-                      const active = isActive(href);
-                      return (
-                        <SheetClose key={href} render={<Link href={href} />} className={cn(
-                          'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors',
-                          active
-                            ? 'bg-white text-primary font-bold shadow-md'
-                            : 'text-white/70 hover:text-white hover:bg-white/10'
-                        )} style={{ fontSize: 18 }}>
-                          <Icon className="h-5 w-5" />
-                          {label}
-                        </SheetClose>
-                      );
-                    })}
-                  </nav>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-                    {mounted && user && (
-                      <div className="mb-3 px-1">
-                        <p className="text-sm text-white/80 font-medium">{user.name || 'Pharmacist'}</p>
-                        <p className="text-xs text-white/50">{user.phone}</p>
-                      </div>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-
               <Link href="/" className="flex items-center gap-2">
                 <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-7 w-7 rounded-lg" />
                 <span className="font-bold text-lg text-primary hidden lg:inline">SmartShelf</span>

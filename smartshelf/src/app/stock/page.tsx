@@ -5,7 +5,7 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { getStockStatus } from '@/lib/risk-engine';
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2, Filter } from 'lucide-react';
 import { MedicineForm } from '@/components/medicine-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ export default function StockPage() {
   const { medicines, isLoaded, loadData, addMedicine } = usePharmacyStore();
   const token = useAuthStore((s) => s.token);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -37,10 +38,14 @@ export default function StockPage() {
 
   const filtered = useMemo(
     () =>
-      medicines.filter((m) =>
-        m.name.toLowerCase().includes(search.toLowerCase())
-      ),
-    [medicines, search]
+      medicines.filter((m) => {
+        const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
+        if (!matchesSearch) return false;
+        if (statusFilter === 'all') return true;
+        const status = getStockStatus(m.currentStock, m.reorderThreshold);
+        return status === statusFilter;
+      }),
+    [medicines, search, statusFilter]
   );
 
   async function handleAdd(data: {
@@ -79,14 +84,37 @@ export default function StockPage() {
           </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            className="pl-12 text-lg"
-            placeholder="Search medicines..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              className="pl-12 text-lg rounded-[14px]"
+              placeholder="Search medicines..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'ok', label: 'In Stock' },
+              { value: 'low', label: 'Low' },
+              { value: 'critical', label: 'Critical' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-bold transition-colors shrink-0',
+                  statusFilter === opt.value
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-white text-[#64748b] border border-[rgba(15,23,42,0.1)] hover:border-primary/30'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {!isLoaded ? (

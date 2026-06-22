@@ -82,6 +82,7 @@ export default function OrdersPage() {
   const router = useRouter();
   const { medicines, loadData } = usePharmacyStore();
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentMessage, setSentMessage] = useState('');
@@ -194,6 +195,7 @@ export default function OrdersPage() {
   }
 
   const validItems = orderItems.filter((i) => i.name.trim());
+  const canOrder = user?.role === 'admin' || user?.role === 'super_admin';
 
   return (
     <AuthGuard>
@@ -361,14 +363,20 @@ export default function OrdersPage() {
         </section>
 
         {/* Send */}
-        <Button
-          onClick={() => setShowReviewDialog(true)}
-          disabled={validItems.length === 0 || sending}
-          className="w-full h-16 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl shadow-lg text-white font-bold text-xl gap-3 border-none"
-        >
-          <MessageCircle className="h-7 w-7" />
-          {sending ? 'Sending...' : validItems.length === 0 ? 'Generate WhatsApp Order' : `Generate WhatsApp Order (${validItems.length} items)`}
-        </Button>
+        {canOrder ? (
+          <Button
+            onClick={() => setShowReviewDialog(true)}
+            disabled={validItems.length === 0 || sending}
+            className="w-full h-16 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl shadow-lg text-white font-bold text-xl gap-3 border-none"
+          >
+            <MessageCircle className="h-7 w-7" />
+            {sending ? 'Sending...' : validItems.length === 0 ? 'Generate WhatsApp Order' : `Generate WhatsApp Order (${validItems.length} items)`}
+          </Button>
+        ) : (
+          <div className="glass-card rounded-2xl p-4 text-center">
+            <p className="text-sm text-muted-foreground font-medium">Only pharmacy admins can place stock orders.</p>
+          </div>
+        )}
 
         {sent && (
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#10b981] text-white px-8 py-4 rounded-2xl shadow-2xl font-bold animate-in zoom-in slide-in-from-bottom-10 z-50 flex items-center gap-3">

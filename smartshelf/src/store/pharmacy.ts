@@ -95,6 +95,9 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       currentStock: medicine.currentStock - quantity,
       updatedAt: new Date().toISOString(),
     };
+    if (updated.isBig5 && updated.currentStock <= 0) {
+      updated.isBig5 = false;
+    }
     await idb.medicines.put(updated);
 
     await get().loadData();
@@ -135,6 +138,9 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
             currentStock: medicine.currentStock - quantity,
             updatedAt: new Date().toISOString(),
           };
+          if (updated.isBig5 && updated.currentStock <= 0) {
+            updated.isBig5 = false;
+          }
           await idb.medicines.put(updated);
         }
       }

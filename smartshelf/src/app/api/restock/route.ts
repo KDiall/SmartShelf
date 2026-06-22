@@ -5,8 +5,12 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: Request) {
   const { method, items: bodyItems } = await request.json();
   const userId = request.headers.get('x-user-id');
-
   const pharmacyId = request.headers.get('x-user-pharmacy-id');
+  const userRole = request.headers.get('x-user-role');
+
+  if (userRole !== 'admin' && userRole !== 'super_admin') {
+    return NextResponse.json({ error: 'Only admins can place stock orders' }, { status: 403 });
+  }
 
   let items: { name: string; quantity: number; unit: string }[];
 

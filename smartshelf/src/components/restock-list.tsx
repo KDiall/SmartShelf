@@ -7,9 +7,11 @@ interface Props {
   items: RestockItem[];
   onSendOrder: () => void;
   sending: boolean;
+  userRole?: string;
 }
 
-export function RestockList({ items, onSendOrder, sending }: Props) {
+export function RestockList({ items, onSendOrder, sending, userRole }: Props) {
+  const canOrder = userRole === 'admin' || userRole === 'super_admin';
   if (items.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-12">
@@ -37,14 +39,18 @@ export function RestockList({ items, onSendOrder, sending }: Props) {
           </Card>
         ))}
       </div>
-      <Button
-        onClick={onSendOrder}
-        disabled={sending}
-        className="w-full h-14 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl text-white font-bold text-lg gap-3 shadow-lg border-none"
-      >
-        <MessageCircle className="h-6 w-6" />
-        {sending ? 'Sending...' : 'Generate WhatsApp Order'}
-      </Button>
+      {canOrder ? (
+        <Button
+          onClick={onSendOrder}
+          disabled={sending}
+          className="w-full h-14 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl text-white font-bold text-lg gap-3 shadow-lg border-none"
+        >
+          <MessageCircle className="h-6 w-6" />
+          {sending ? 'Sending...' : 'Generate WhatsApp Order'}
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground text-center py-3">Only admins can place stock orders.</p>
+      )}
     </div>
   );
 }

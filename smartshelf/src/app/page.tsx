@@ -13,7 +13,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Clock, Pill, ShoppingBag, Plus } from 'lucide-react';
+import { AlertTriangle, Clock, Pill, ShoppingBag, Plus, Edit3, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -95,7 +102,7 @@ const BIG5_GRADIENTS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { medicines, sales, alerts, healthScore, isLoaded, loadData } = usePharmacyStore();
+  const { medicines, sales, alerts, healthScore, isLoaded, loadData, updateMedicine } = usePharmacyStore();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   useSync();
@@ -122,6 +129,17 @@ export default function HomePage() {
   const big5Meds = useMemo(() => medicines.filter((m) => m.isBig5), [medicines]);
 
   const animSales = useCountUp(todaySales, 800, isLoaded);
+
+  async function handleEditBig5(id: string) {
+    router.push(`/medicines/${id}`);
+  }
+
+  async function handleRemoveBig5(id: string) {
+    const med = medicines.find((m) => m.id === id);
+    if (med) {
+      await updateMedicine({ ...med, isBig5: false });
+    }
+  }
 
   return (
     <AuthGuard>
@@ -277,6 +295,8 @@ export default function HomePage() {
                     key={med.id}
                     medicine={med}
                     gradient={BIG5_GRADIENTS[idx % BIG5_GRADIENTS.length]}
+                    onEdit={handleEditBig5}
+                    onRemove={handleRemoveBig5}
                   />
                 ))}
               </div>

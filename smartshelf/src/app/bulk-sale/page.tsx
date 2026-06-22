@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Loader2, Search, Pill } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Loader2, Search, Pill, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import Select from 'react-select';
@@ -19,7 +19,10 @@ interface LineItem {
   medicineName: string;
   quantity: number;
   maxStock: number;
+  unit: string;
 }
+
+const UNIT_OPTIONS = ['piece', 'pack', 'carton', 'box', 'bottle', 'vial', 'sachet'];
 
 export default function BulkSalePage() {
   const router = useRouter();
@@ -47,7 +50,7 @@ export default function BulkSalePage() {
   function addItem() {
     setItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), medicineId: '', medicineName: '', quantity: 1, maxStock: 0 },
+      { id: crypto.randomUUID(), medicineId: '', medicineName: '', quantity: 1, maxStock: 0, unit: 'piece' },
     ]);
   }
 
@@ -65,6 +68,7 @@ export default function BulkSalePage() {
           updated.medicineName = med?.name || '';
           updated.maxStock = med?.currentStock || 0;
           updated.quantity = 1;
+          updated.unit = med?.unit || 'piece';
         }
         return updated;
       })
@@ -238,6 +242,15 @@ export default function BulkSalePage() {
                           >
                             +
                           </button>
+                          <select
+                            value={item.unit}
+                            onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
+                            className="h-10 rounded-xl border border-input bg-white px-3 text-xs font-semibold text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {UNIT_OPTIONS.map((u) => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
+                          </select>
                           {item.maxStock > 0 && (
                             <span className="text-xs text-muted-foreground ml-1">
                               of {item.maxStock}
