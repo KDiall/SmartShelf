@@ -354,6 +354,15 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
     console.log(`✅ Client ready for ${chatbotId}`);
     const phoneNumber = client.info?.wid?.user || 'unknown';
     startHealthMonitoring(chatbotId, client);
+    // Force-save session to MongoDB immediately so it survives container restarts
+    try {
+      if (client.authStrategy && typeof client.authStrategy.saveSession === 'function') {
+        await client.authStrategy.saveSession();
+        console.log(`✅ Session saved to MongoDB for ${safeClientId}`);
+      }
+    } catch (e) {
+      console.error('Failed to save session on ready:', e.message);
+    }
     try {
       await axios.post(getAgentUrl(), { chatbotId, event: 'connected', phoneNumber }, {
         headers: { 'x-api-key': getAgentApiKey() }
@@ -403,6 +412,14 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
     } catch (error) {
       console.error('Error processing message:', error.message);
     }
+  });
+
+  client.on('remote_session_saved', () => {
+    console.log(`✅ Remote session backed up for ${safeClientId}`);
+  });
+
+  client.on('auth_failure', (msg) => {
+    console.error(`❌ Auth failure for ${chatbotId}:`, msg);
   });
 
   client.on('disconnected', async (reason) => {
