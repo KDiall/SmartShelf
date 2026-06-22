@@ -244,10 +244,17 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  const CHROME_USER_DATA = `/tmp/chrome-profile-${Date.now()}`;
-
-  // Ensure Chrome user-data directory exists
-  try { fs.mkdirSync(CHROME_USER_DATA, { recursive: true }); } catch (e) {}
+  // Clean up Chrome lock files from a previous unclean shutdown so Chrome
+  // does not refuse to start with "profile appears to be in use".
+  // The user-data-dir is managed by LocalAuth at SESSION_DIR/session(-clientId).
+  try {
+    for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
+      for (const base of [SESSION_DIR, path.join(SESSION_DIR, 'session')]) {
+        const p = path.join(base, name);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+    }
+  } catch (e) {}
 
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
@@ -260,7 +267,6 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-gpu',
         '--single-process',
         '--no-zygote',
-        `--user-data-dir=${CHROME_USER_DATA}`,
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
@@ -440,8 +446,20 @@ app.get('/healthz', (req, res) => {
 });
 
 app.get('/debug-env', (req, res) => {
+  let sessionFiles = [];
+  try {
+    if (fs.existsSync(SESSION_DIR)) {
+      sessionFiles = fs.readdirSync(SESSION_DIR, { withFileTypes: true }).map(e => ({
+        name: e.name,
+        isDir: e.isDirectory(),
+      }));
+    }
+  } catch (e) { sessionFiles = [{ error: e.message }]; }
+
   res.json({
     sessionDir: SESSION_DIR,
+    sessionDirExists: fs.existsSync(SESSION_DIR),
+    sessionFiles,
     chromeUserData: 'ephemeral (/tmp/chrome-profile-*)',
     clientPhone: getChatbotId(),
     connected: !!clients.get(getChatbotId())?.info?.wid?.user,
