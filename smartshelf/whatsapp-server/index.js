@@ -166,17 +166,19 @@ async function resolveJID(client, identifier) {
   const cleaned = identifier.replace(/[^\d]/g, '');
   const naiveJID = `${cleaned}@c.us`;
 
-  // Ask WhatsApp for the real serialized JID. WhatsApp's internal id can differ
+// Ask WhatsApp for the real serialized JID. WhatsApp's internal id can differ
   // from `${number}@c.us`, so blindly appending it only works for some numbers
   // (e.g. saved contacts). getNumberId resolves the correct JID for any number
   // that is actually registered on WhatsApp.
+  // NOTE: We reject @lid JIDs because they often cause silent delivery failures.
+  // The traditional @c.us format is more reliable for message delivery.
   try {
     const wid = await client.getNumberId(cleaned);
-    if (wid && wid._serialized) {
+    if (wid && wid._serialized && !wid._serialized.endsWith('@lid')) {
       console.log(`[resolveJID] Resolved ${cleaned} -> ${wid._serialized}`);
       return wid._serialized;
     }
-    console.log(`[resolveJID] getNumberId returned null for ${cleaned}; falling back to ${naiveJID}`);
+    console.log(`[resolveJID] ${cleaned}: using @c.us (${wid ? 'ignored '+wid._serialized : 'getNumberId returned null'})`);
   } catch (error) {
     console.warn(`[resolveJID] getNumberId failed for ${cleaned}: ${error.message || error}; falling back to ${naiveJID}`);
   }
