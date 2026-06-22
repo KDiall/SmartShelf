@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,6 +10,8 @@ import { UploadDropzone } from '@/lib/uploadthing';
 
 export default function GuidelinesPage() {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -29,6 +32,12 @@ export default function GuidelinesPage() {
       console.error('Failed to load guidelines', err);
     }
   }
+
+  useEffect(() => {
+    if (user && user.role !== 'super_admin') {
+      router.replace('/');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount

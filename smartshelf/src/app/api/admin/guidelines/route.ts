@@ -4,7 +4,7 @@ import { enqueueIngestion, deleteFile, NAMESPACE } from '@/lib/geneline';
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
-  if (role !== 'super_admin' && role !== 'admin') {
+  if (role !== 'super_admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const role = request.headers.get('x-user-role');
   const userId = request.headers.get('x-user-id');
-  if (role !== 'super_admin' && role !== 'admin') {
+  if (role !== 'super_admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const role = request.headers.get('x-user-role');
-  if (role !== 'super_admin' && role !== 'admin') {
+  if (role !== 'super_admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

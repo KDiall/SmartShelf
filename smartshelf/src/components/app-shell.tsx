@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
   { href: '/orders', label: 'Orders', Icon: ShoppingCart, tenantOnly: true },
   { href: '/admin/pharmacies', label: 'Pharmacies', Icon: Store, superAdminOnly: true },
   { href: '/admin/users', label: 'Users', Icon: Users, superAdminOnly: true },
-  { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, adminOnly: true },
+  { href: '/admin/guidelines', label: 'Guidelines', Icon: FileText, superAdminOnly: true },
   { href: '/more', label: 'Reports', Icon: BarChart3, tenantOnly: true },
   { href: '/settings', label: 'Settings', Icon: Settings },
 ];
