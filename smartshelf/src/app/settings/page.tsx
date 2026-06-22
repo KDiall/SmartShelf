@@ -218,7 +218,7 @@ export default function SettingsPage() {
             </Card>
 
             {/* WhatsApp Connection */}
-            {(user?.role === 'super_admin' || user?.role === 'admin') && (
+            {user?.role === 'super_admin' && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">WhatsApp Connection</CardTitle>
