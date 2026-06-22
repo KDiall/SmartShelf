@@ -12,29 +12,32 @@ async function seedDemo() {
     process.exit(1);
   }
 
-  const demoPhones = ['7000', '7001', '7002', '7003'];
   const demoUsers = [
-    { phone: '7000', name: 'Demo Admin' },
-    { phone: '7001', name: 'Demo Pharmacist 1' },
-    { phone: '7002', name: 'Demo Pharmacist 2' },
-    { phone: '7003', name: 'Demo Pharmacist 3' },
+    { phone: '7000', name: 'Super Admin', role: 'super_admin' as const, pharmacyId: null },
+    { phone: '7001', name: 'Pharmacy Admin', role: 'admin' as const, pharmacyId: pharmacy.id },
+    { phone: '7002', name: 'Pharmacist 1', role: 'pharmacist' as const, pharmacyId: pharmacy.id },
+    { phone: '7003', name: 'Pharmacist 2', role: 'pharmacist' as const, pharmacyId: pharmacy.id },
   ];
 
   for (const u of demoUsers) {
     const existing = await prisma.user.findUnique({ where: { phone: u.phone } });
-    if (!existing) {
+    if (existing) {
+      await prisma.user.update({
+        where: { phone: u.phone },
+        data: { role: u.role, name: u.name, pharmacyId: u.pharmacyId, verified: true },
+      });
+      console.log(`  Updated demo user: ${u.phone} -> ${u.name} (${u.role})`);
+    } else {
       await prisma.user.create({
         data: {
           phone: u.phone,
           name: u.name,
-          role: u.phone === '7000' ? 'admin' : 'pharmacist',
+          role: u.role,
           verified: true,
-          pharmacyId: pharmacy.id,
+          pharmacyId: u.pharmacyId,
         },
       });
       console.log(`  Created demo user: ${u.phone} (${u.name})`);
-    } else {
-      console.log(`  Demo user already exists: ${u.phone}`);
     }
   }
 
