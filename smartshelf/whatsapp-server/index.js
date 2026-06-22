@@ -110,7 +110,7 @@ const requireApiKey = (req, res, next) => {
 const qrCodes = new Map();
 const clients = new Map();
 const sessionHealthChecks = new Map();
-const HEALTH_CHECK_INTERVAL = 30000;
+const HEALTH_CHECK_INTERVAL = 60000;
 let initializing = false;
 
 // MongoDB session schema for RemoteAuth persistence
@@ -338,6 +338,13 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--no-first-run',
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-features=ChromeWhatsNewUI,TranslateUI,MediaRouter,DialMediaRouteProvider',
+        '--js-flags=--max_old_space_size=256',
+        '--memory-pressure-off',
+        '--disable-ipc-flooding-protection',
+        '--aggressive-cache-discard',
+        '--disable-backgrounding-occluded-windows',
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
@@ -345,7 +352,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   client.on('qr', async (qr) => {
     console.log(`📱 QR code generated for ${chatbotId}`);
-    const base64 = await qrcode.toDataURL(qr, { width: 512 });
+    const base64 = await qrcode.toDataURL(qr, { width: 256 });
     qrCodes.set(chatbotId, { qr, base64 });
     io.emit(`qr:${chatbotId}`, base64);
   });
