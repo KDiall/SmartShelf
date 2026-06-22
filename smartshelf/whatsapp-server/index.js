@@ -306,6 +306,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
       store: mongoStore,
       clientId: safeClientId,
       dataPath: SESSION_DIR,
+      backupSyncIntervalMs: 60000,
     }),
     takeoverOnConflict: true,
     takeoverTimeoutMs: 30000,
