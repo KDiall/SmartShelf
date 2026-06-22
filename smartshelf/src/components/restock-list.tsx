@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MessageCircle } from 'lucide-react';
 import type { RestockItem } from '@/types';
 
 interface Props {
@@ -39,9 +40,10 @@ export function RestockList({ items, onSendOrder, sending }: Props) {
       <Button
         onClick={onSendOrder}
         disabled={sending}
-        className="w-full bg-green-600 hover:bg-green-700"
+        className="w-full h-14 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl text-white font-bold text-lg gap-3 shadow-lg border-none"
       >
-        {sending ? 'Sending...' : 'Send Order via WhatsApp'}
+        <MessageCircle className="h-6 w-6" />
+        {sending ? 'Sending...' : 'Generate WhatsApp Order'}
       </Button>
     </div>
   );

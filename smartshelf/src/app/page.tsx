@@ -134,20 +134,15 @@ export default function HomePage() {
             </div>
             <Skeleton className="h-12 w-12 rounded-full shrink-0" />
           </div>
-          <Card className="glass-card rounded-3xl overflow-hidden min-h-[280px]">
-            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
-              <Skeleton className="h-[220px] w-[220px] rounded-full shrink-0" />
-              <div className="flex-1 space-y-3 w-full">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-40" />
-                <Skeleton className="h-4 w-56" />
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-7 w-24 rounded-full" />
-                  <Skeleton className="h-7 w-28 rounded-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Skeleton className="h-[280px] rounded-3xl" />
+            </div>
+            <div className="space-y-3">
+              <Skeleton className="h-32 rounded-3xl" />
+              <Skeleton className="h-32 rounded-3xl" />
+            </div>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-32 rounded-2xl" />
@@ -173,74 +168,81 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Hero Card */}
-          <Card className="glass-card rounded-3xl overflow-hidden active:scale-[0.99] transition-transform duration-150 entrance min-h-[280px]" style={{ animationDelay: '100ms' }}>
-            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
-              <HealthRing score={healthScore} />
-              <div className="flex-1 text-center md:text-left">
-                <p className="text-[#64748b] text-xs font-semibold uppercase tracking-widest">Today&apos;s Performance</p>
-                <p className="text-4xl font-black text-[#0f172a] mt-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {animSales} Sales
-                </p>
-                <p className="text-sm text-[#64748b] mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
-                <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
-                  {lowStockCount > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      {lowStockCount} Low Stock
-                    </span>
-                  )}
-                  {expiryCount > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                      <Clock className="h-3.5 w-3.5" />
-                      {expiryCount} Expiring
-                    </span>
-                  )}
-                  {totalAlerts === 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      All Healthy
-                    </span>
-                  )}
+          {/* Hero + Risk — 2-column grid on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Hero Card */}
+            <Card className="glass-card rounded-3xl overflow-hidden active:scale-[0.99] transition-transform duration-150 entrance min-h-[280px] lg:col-span-2" style={{ animationDelay: '100ms' }}>
+              <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                <HealthRing score={healthScore} />
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-[#64748b] text-xs font-semibold uppercase tracking-widest">Today&apos;s Performance</p>
+                  <p className="text-4xl font-black text-[#0f172a] mt-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {animSales} Sales
+                  </p>
+                  <p className="text-sm text-[#64748b] mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
+                    {lowStockCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {lowStockCount} Low Stock
+                      </span>
+                    )}
+                    {expiryCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+                        <Clock className="h-3.5 w-3.5" />
+                        {expiryCount} Expiring
+                      </span>
+                    )}
+                    {totalAlerts === 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        All Healthy
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Risk Summary */}
-          {totalAlerts > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {lowStockCount > 0 && (
-                <button
-                  onClick={() => router.push('/orders')}
-                  className="glass-card rounded-2xl p-4 flex items-center gap-4 text-left hover:shadow-lg active:scale-[0.98] transition-all duration-150 group entrance"
-                  style={{ animationDelay: '200ms' }}
-                >
-                  <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+            {/* Risk Summary — 1 column on the right */}
+            <div className="flex flex-col gap-3">
+              <Card className="glass-card rounded-3xl overflow-hidden entrance p-5" style={{ animationDelay: '150ms' }}>
+                <p className="text-xs font-bold text-[#64748b] uppercase tracking-widest mb-3">Inventory Risks</p>
+                {totalAlerts > 0 ? (
+                  <div className="space-y-2">
+                    {lowStockCount > 0 && (
+                      <button
+                        onClick={() => router.push('/orders')}
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 transition-colors text-left group"
+                      >
+                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                        <div>
+                          <p className="font-bold text-sm text-[#0f172a]">{lowStockCount} Stockout Risk</p>
+                          <p className="text-xs text-[#64748b]">Reorder soon</p>
+                        </div>
+                      </button>
+                    )}
+                    {expiryCount > 0 && (
+                      <button
+                        onClick={() => router.push('/risks')}
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-red-50 hover:bg-red-100 transition-colors text-left group"
+                      >
+                        <Clock className="h-5 w-5 text-red-500 shrink-0" />
+                        <div>
+                          <p className="font-bold text-sm text-[#0f172a]">{expiryCount} Expiry Risk</p>
+                          <p className="text-xs text-[#64748b]">Check expiry dates</p>
+                        </div>
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-bold text-[#0f172a]">{lowStockCount} Stockout Risk</p>
-                    <p className="text-xs text-[#64748b]">Medicines running low — tap to reorder</p>
+                ) : (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50">
+                    <span className="h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">✓</span>
+                    <p className="text-sm font-bold text-emerald-700">All clear</p>
                   </div>
-                </button>
-              )}
-              {expiryCount > 0 && (
-                <button
-                  onClick={() => router.push('/risks')}
-                  className="glass-card rounded-2xl p-4 flex items-center gap-4 text-left hover:shadow-lg active:scale-[0.98] transition-all duration-150 group entrance"
-                  style={{ animationDelay: '300ms' }}
-                >
-                  <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Clock className="h-6 w-6 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-[#0f172a]">{expiryCount} Expiry Risk</p>
-                    <p className="text-xs text-[#64748b]">Medicines expiring soon — tap to review</p>
-                  </div>
-                </button>
-              )}
+                )}
+              </Card>
             </div>
-          )}
+          </div>
 
           {/* Big 5 Quick Log */}
           <section className="entrance" style={{ animationDelay: '400ms' }}>

@@ -9,6 +9,7 @@ import { usePwa } from '@/hooks/use-pwa';
 import { useSync } from '@/hooks/use-sync';
 import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 type NavItem = {
   href: string;
@@ -212,6 +213,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <img src="/smartshelf-logo.png" alt="SmartShelf" className="h-7 w-7 rounded-lg" />
                 <span className="font-bold text-lg text-primary hidden lg:inline">SmartShelf</span>
               </Link>
+            </div>
+
+            <div className="hidden lg:block text-xs text-[#64748b] font-semibold">
+              {format(new Date(), 'MMM d, yyyy')}
             </div>
 
             <OnlineIndicator />

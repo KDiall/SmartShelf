@@ -367,7 +367,7 @@ export default function OrdersPage() {
           className="w-full h-16 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl shadow-lg text-white font-bold text-xl gap-3 border-none"
         >
           <MessageCircle className="h-7 w-7" />
-          {sending ? 'Sending...' : validItems.length === 0 ? 'Send Order via WhatsApp' : `Send Order (${validItems.length} items)`}
+          {sending ? 'Sending...' : validItems.length === 0 ? 'Generate WhatsApp Order' : `Generate WhatsApp Order (${validItems.length} items)`}
         </Button>
 
         {sent && (
@@ -404,7 +404,7 @@ export default function OrdersPage() {
               </Button>
               <Button onClick={handleSendOrder} disabled={validItems.length === 0} className="flex-1 h-11 rounded-xl font-bold gap-2 bg-[#25D366] hover:bg-[#25D366]/90">
                 <MessageCircle className="h-5 w-5" />
-                Send ({validItems.length} items)
+                Generate Order
               </Button>
             </div>
           </DialogContent>
