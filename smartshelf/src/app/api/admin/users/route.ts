@@ -4,7 +4,15 @@ import { sendAccountCreatedMessage, sendWithRetry } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
-function generateOtp(): string {
+function isDemoMode(): boolean {
+  return process.env.DEMO_MODE === 'true';
+}
+
+function fixedOtp(): string {
+  return process.env.FIXED_OTP || '123456';
+}
+
+function randomOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
@@ -97,14 +105,37 @@ export async function POST(request: Request) {
     },
   });
 
-  const otp = generateOtp();
+  const otp = fixedOtp();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
   await prisma.otp.create({
     data: { phone, code: otp, expiresAt },
   });
 
-  const result = await sendWithRetry(() => sendAccountCreatedMessage(phone, name || null, otp));
+  if (isDemoMode()) {
+    console.log(`[DEMO OTP] For new user ${phone}: ${otp}`);
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name,
+        role: user.role,
+        verified: user.verified,
+        createdAt: user.createdAt.toISOString(),
+        pharmacyId: user.pharmacyId,
+      },
+      otpSent: true,
+    }, { status: 201 });
+  }
+
+  const realOtp = randomOtp();
+  const realExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  await prisma.otp.deleteMany({ where: { phone, used: false } }).catch(() => {});
+  await prisma.otp.create({
+    data: { phone, code: realOtp, expiresAt: realExpiresAt },
+  });
+
+  const result = await sendWithRetry(() => sendAccountCreatedMessage(phone, name || null, realOtp));
 
   if (!result.sent) {
     console.error(`[WHATSAPP FAIL] Account creation OTP for ${phone}: ${otp} | Error: ${result.error}`);
