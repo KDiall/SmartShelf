@@ -61,9 +61,26 @@ export async function POST(request: Request) {
   let pharmacyId: string | undefined;
   let senderFound = false;
   try {
-    const sender = senderPhone
-      ? await prisma.user.findUnique({ where: { phone: senderPhone }, select: { pharmacyId: true, role: true } })
-      : null;
+    let sender: { pharmacyId: string | null; role: string } | null = null;
+
+    // 1. Exact match by full phone number
+    if (senderPhone) {
+      sender = await prisma.user.findUnique({
+        where: { phone: senderPhone },
+        select: { pharmacyId: true, role: true },
+      });
+    }
+
+    // 2. Fallback: try matching last digits (handles demo short codes like 7000
+    //    when the user texts from a real number like +23276000000)
+    if (!sender && senderPhone) {
+      const rawDigits = from.split('@')[0].replace(/\D/g, '');
+      const users = await prisma.user.findMany({
+        select: { phone: true, pharmacyId: true, role: true },
+      });
+      sender = users.find((u) => rawDigits.endsWith(u.phone.replace(/\D/g, ''))) ?? null;
+    }
+
     senderFound = !!sender;
     pharmacyId = sender?.pharmacyId ?? undefined;
     console.log(`Sender phone=${senderPhone} pharmacyId=${pharmacyId || 'none'} role=${sender?.role || 'unknown'}`);
