@@ -309,7 +309,8 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   client.on('message', async (message) => {
     try {
       const chat = await message.getChat().catch(() => null);
-      if (message.fromMe || chat?.isGroup || !message.from.endsWith('@c.us')) return;
+      // Accept messages from any valid WhatsApp JID (c.us, lid, s.whatsapp.net, etc.)
+      if (message.fromMe || chat?.isGroup) return;
 
       let mediaData = null;
       if (message.hasMedia) {
