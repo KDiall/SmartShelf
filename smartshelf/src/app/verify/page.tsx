@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 function VerifyForm() {
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') || '';
-  const [code, setCode] = useState('');
+  const debugOtp = searchParams.get('otp') || '';
+  const [code, setCode] = useState(debugOtp);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -68,6 +69,11 @@ function VerifyForm() {
           <p className="text-[#64748b] font-medium mt-1">
             Code sent to {phone}
           </p>
+          {debugOtp && (
+            <p className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-800 font-mono">
+              Debug: OTP is <strong>{debugOtp}</strong> — enter this code
+            </p>
+          )}
         </div>
 
         <Card className="glass-card rounded-3xl border-0">
