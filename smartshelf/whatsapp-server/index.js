@@ -219,8 +219,13 @@ function stopHealthMonitoring(chatbotId) {
 
 async function clearSession(chatbotId) {
   try {
-    const sessionPath = path.join(SESSION_DIR, `session-${String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_')}`);
-    if (fs.existsSync(sessionPath)) fs.rmSync(sessionPath, { recursive: true, force: true });
+    // LocalAuth uses 'session' (no suffix) when clientId is not provided
+    const sessionDir = path.join(SESSION_DIR, 'session');
+    if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
+    // Also try the clientId-based path for backwards compatibility
+    const id = String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_');
+    const sessionIdPath = path.join(SESSION_DIR, `session-${id}`);
+    if (fs.existsSync(sessionIdPath)) fs.rmSync(sessionIdPath, { recursive: true, force: true });
   } catch (e) {}
 }
 
