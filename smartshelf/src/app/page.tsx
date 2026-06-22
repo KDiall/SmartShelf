@@ -126,7 +126,15 @@ export default function HomePage() {
   );
   const totalAlerts = lowStockCount + expiryCount;
 
-  const big5Meds = useMemo(() => medicines.filter((m) => m.isBig5), [medicines]);
+  const big5Meds = useMemo(() => {
+    const saleCounts: Record<string, number> = {};
+    for (const s of sales) {
+      saleCounts[s.medicineId] = (saleCounts[s.medicineId] || 0) + s.quantity;
+    }
+    return medicines
+      .filter((m) => m.isBig5)
+      .sort((a, b) => (saleCounts[b.id] || 0) - (saleCounts[a.id] || 0));
+  }, [medicines, sales]);
 
   const animSales = useCountUp(todaySales, 800, isLoaded);
 

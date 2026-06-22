@@ -70,6 +70,8 @@ export default function EditMedicinePage() {
               defaultValues={medicine}
               onSubmit={onSubmit}
               submitLabel="Save Changes"
+              big5LimitReached={medicines.filter((m) => m.isBig5 && m.id !== medicine.id).length >= 8}
+              isCurrentlyBig5={medicine.isBig5}
             />
           </CardContent>
         </Card>

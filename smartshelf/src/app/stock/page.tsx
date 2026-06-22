@@ -181,7 +181,11 @@ export default function StockPage() {
               <DialogTitle>Add Medicine</DialogTitle>
               <DialogDescription>Enter the details of the new medicine.</DialogDescription>
             </DialogHeader>
-            <MedicineForm onSubmit={handleAdd} submitLabel="Add Medicine" />
+            <MedicineForm
+              onSubmit={handleAdd}
+              submitLabel="Add Medicine"
+              big5LimitReached={medicines.filter((m) => m.isBig5).length >= 8}
+            />
           </DialogContent>
         </Dialog>
       </div>

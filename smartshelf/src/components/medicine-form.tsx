@@ -28,13 +28,11 @@ interface Props {
   defaultValues?: Partial<Medicine>;
   onSubmit: (data: MedicineFormData) => Promise<void>;
   submitLabel?: string;
+  big5LimitReached?: boolean;
+  isCurrentlyBig5?: boolean;
 }
 
-export function MedicineForm({
-  defaultValues,
-  onSubmit,
-  submitLabel = 'Save',
-}: Props) {
+export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', big5LimitReached, isCurrentlyBig5 }: Props) {
   const [uploading, setUploading] = useState(false);
 
   const {
@@ -212,9 +210,13 @@ export function MedicineForm({
         <input
           type="checkbox"
           {...register('isBig5')}
-          className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+          disabled={big5LimitReached && !isCurrentlyBig5}
+          className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <span className="text-sm font-medium">Mark as Quick-Sale item (Big 5)</span>
+        {big5LimitReached && !isCurrentlyBig5 && (
+          <span className="text-xs text-amber-600 font-medium ml-1">Quick-sale full (max 8). Remove one first.</span>
+        )}
       </label>
 
       <Button type="submit" disabled={isSubmitting} className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20">
