@@ -246,17 +246,18 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Delete the entire Chrome profile on every start to avoid stale data
-  // causing "profile in use" or corrupt session errors.
-  // Once the user scans a QR and the session proves stable, we can enable
-  // persistence by preserving the session directory.
+  // Preserve an existing paired session across restarts. Only clean up
+  // Chrome lock files so the profile remains intact.
   const sessionDir = path.join(SESSION_DIR, 'session');
-  try {
-    if (fs.existsSync(sessionDir)) {
-      fs.rmSync(sessionDir, { recursive: true, force: true });
-      console.log('[init] Cleared Chrome profile for fresh start');
-    }
-  } catch (e) {}
+  if (fs.existsSync(sessionDir)) {
+    try {
+      for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
+        const p = path.join(sessionDir, name);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+      console.log('[init] Preserved session, cleaned lock files');
+    } catch (e) {}
+  }
 
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
