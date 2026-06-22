@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon, MessageCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UploadButton } from '@/lib/uploadthing';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Pharmacy } from '@/types';
 
 export default function SettingsPage() {
@@ -125,23 +126,30 @@ export default function SettingsPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 entrance" style={{ animationDelay: '0ms' }}>
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-xl">
             <ArrowLeft className="h-6 w-6 text-muted-foreground" />
           </Button>
-          <h1 className="font-bold text-foreground text-3xl tracking-tight">
-            {user?.role === 'super_admin' ? 'Super Admin Settings' : user?.role === 'admin' ? 'Admin Settings' : 'Pharmacy Profile'}
-          </h1>
+          <div>
+            <h1 className="font-bold text-foreground text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {user?.role === 'super_admin' ? 'Super Admin Settings' : user?.role === 'admin' ? 'Admin Settings' : 'Pharmacy Profile'}
+            </h1>
+            <p className="text-sm text-[#64748b] font-medium mt-0.5">Manage your profile and preferences</p>
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-60">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="space-y-3">
+            <Skeleton className="h-40 rounded-2xl" />
+            <Skeleton className="h-28 rounded-2xl" />
+            <Skeleton className="h-40 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+            <Skeleton className="h-14 rounded-2xl" />
           </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6">
             {/* Avatar */}
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '50ms' }}>
               <CardContent className="p-6">
                 <div className="flex flex-col items-center gap-4">
                   <div className="h-24 w-24 rounded-full bg-secondary/50 border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
@@ -179,7 +187,7 @@ export default function SettingsPage() {
             </Card>
 
             {/* Role & Pharmacy Info */}
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '100ms' }}>
               <CardHeader>
                 <CardTitle className="text-lg">Account & Branch</CardTitle>
               </CardHeader>
@@ -219,7 +227,7 @@ export default function SettingsPage() {
 
             {/* WhatsApp Connection */}
             {user?.role === 'super_admin' && (
-              <Card>
+              <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '150ms' }}>
                 <CardHeader>
                   <CardTitle className="text-lg">WhatsApp Connection</CardTitle>
                 </CardHeader>
@@ -264,7 +272,7 @@ export default function SettingsPage() {
             )}
 
             {/* Profile Fields */}
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '200ms' }}>
               <CardHeader>
                 <CardTitle className="text-lg">
                   {user?.role === 'admin' ? 'Pharmacy Information' : 'Profile Information'}
@@ -346,7 +354,8 @@ export default function SettingsPage() {
             <Button
               type="submit"
               disabled={saving}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 gap-2 text-base font-bold"
+              className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 gap-2 text-base font-bold entrance"
+              style={{ animationDelay: '250ms' }}
             >
               {saving ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

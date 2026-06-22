@@ -8,8 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Loader2, Search, Pill } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import Select from 'react-select';
 
 interface LineItem {
@@ -124,15 +125,26 @@ export default function BulkSalePage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 entrance" style={{ animationDelay: '0ms' }}>
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-xl">
             <ArrowLeft className="h-6 w-6 text-muted-foreground" />
           </Button>
-          <h1 className="font-bold text-foreground text-3xl tracking-tight">Bulk Sale</h1>
+          <div>
+            <h1 className="font-bold text-foreground text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Bulk Sale
+            </h1>
+            <p className="text-sm text-[#64748b] font-medium mt-0.5">Record multiple sales at once</p>
+          </div>
         </div>
 
-        {done ? (
-          <Card className="bg-[#10b981]/5 border-[#10b981]/20">
+        {!isLoaded ? (
+          <div className="space-y-3 entrance" style={{ animationDelay: '50ms' }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
+          </div>
+        ) : done ? (
+          <Card className="glass-card rounded-2xl border-0">
             <CardContent className="p-12 text-center">
               <CheckCircle2 className="h-16 w-16 text-[#10b981] mx-auto mb-4" />
               <p className="text-2xl font-black text-[#10b981] uppercase tracking-tight">Sale Complete</p>
@@ -156,7 +168,7 @@ export default function BulkSalePage() {
             {items.length > 0 && (
               <div className="space-y-3">
                 {items.map((item, idx) => (
-                  <Card key={item.id} className="overflow-hidden">
+                  <Card key={item.id} className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: `${idx * 60}ms` }}>
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -249,7 +261,7 @@ export default function BulkSalePage() {
             </Button>
 
             {totalItems > 0 && (
-              <Card className="bg-primary/5 border-primary/20">
+              <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '200ms' }}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-foreground">
@@ -275,15 +287,13 @@ export default function BulkSalePage() {
             )}
 
             {items.length === 0 && (
-              <Card className="bg-muted/20 border-dashed border-2 border-border">
+              <Card className="glass-card rounded-3xl border-0 entrance" style={{ animationDelay: '50ms' }}>
                 <CardContent className="p-12 text-center">
-                  <ShoppingCart className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                  <p className="text-lg font-bold text-muted-foreground uppercase tracking-tight">
-                    No items added
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2 uppercase tracking-widest font-bold opacity-50">
-                    Tap &ldquo;Add Item&rdquo; to start a bulk sale
-                  </p>
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <Pill className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="text-[#0f172a] font-bold text-lg">No items added</p>
+                  <p className="text-xs text-[#64748b] mt-2 font-medium">Tap &ldquo;Add Item&rdquo; to start a bulk sale.</p>
                 </CardContent>
               </Card>
             )}

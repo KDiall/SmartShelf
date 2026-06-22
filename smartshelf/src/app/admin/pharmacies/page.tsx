@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, Store, Building2, Phone as PhoneIcon, Users, Pill, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Store, Building2, Phone as PhoneIcon, Users, UsersIcon, Pill, ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -134,36 +136,43 @@ export default function AdminPharmaciesPage() {
   return (
     <AuthGuard>
       <div className="space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between entrance" style={{ animationDelay: '0ms' }}>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-xl">
               <ArrowLeft className="h-6 w-6 text-muted-foreground" />
             </Button>
-            <h1 className="font-bold text-foreground text-3xl">Pharmacies</h1>
+            <div>
+              <h1 className="font-bold text-foreground text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Pharmacies
+              </h1>
+              <p className="text-sm text-[#64748b] font-medium mt-0.5">Manage all pharmacy branches</p>
+            </div>
           </div>
-          <Button onClick={() => setShowAddModal(true)} size="icon">
+          <Button onClick={() => setShowAddModal(true)} size="icon" className="h-10 w-10 rounded-2xl">
             <Plus className="h-5 w-5" />
           </Button>
         </div>
 
-        <p className="text-sm text-muted-foreground -mt-3">
-          Manage all pharmacy branches. Each pharmacy has its own admin, staff, medicines, and sales.
-        </p>
-
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground text-lg">Loading...</div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-2xl" />
+            ))}
+          </div>
         ) : pharmacies.length === 0 ? (
-          <Card>
+          <Card className="glass-card rounded-3xl border-0 entrance" style={{ animationDelay: '100ms' }}>
             <CardContent className="p-12 text-center">
-              <Store className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-              <p className="text-lg font-bold">No pharmacies yet</p>
-              <p className="text-sm text-muted-foreground">Create your first pharmacy branch.</p>
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Store className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-[#0f172a] font-bold text-lg">No pharmacies yet</p>
+              <p className="text-xs text-[#64748b] mt-2 font-medium">Create your first pharmacy branch.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {pharmacies.map((p) => (
-              <Card key={p.id} className="hover:shadow-md transition-shadow">
+            {pharmacies.map((p, idx) => (
+              <Card key={p.id} className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: `${idx * 80}ms` }}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -210,7 +219,7 @@ export default function AdminPharmaciesPage() {
 
         {/* Delete confirmation */}
         <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-sm rounded-3xl">
             <DialogHeader>
               <DialogTitle>Delete Pharmacy?</DialogTitle>
               <DialogDescription>
@@ -218,11 +227,12 @@ export default function AdminPharmaciesPage() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <DialogClose render={<Button variant="outline" className="rounded-2xl" />}>Cancel</DialogClose>
               <Button
                 variant="destructive"
                 disabled={deleteLoading}
                 onClick={() => deleteId && handleDelete(deleteId)}
+                className="rounded-2xl"
               >
                 {deleteLoading ? 'Deleting...' : 'Delete'}
               </Button>
@@ -232,7 +242,7 @@ export default function AdminPharmaciesPage() {
 
         {/* Add pharmacy modal */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md rounded-3xl">
             <DialogHeader>
               <DialogTitle>New Pharmacy Branch</DialogTitle>
               <DialogDescription>Enter the pharmacy name and the admin&apos;s WhatsApp number. The admin will use this number to log in.</DialogDescription>
@@ -240,28 +250,28 @@ export default function AdminPharmaciesPage() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Pharmacy Name *</Label>
-                <Input id="name" placeholder="e.g. Main Branch" value={newName} onChange={(e) => setNewName(e.target.value)} required />
+                <Input id="name" placeholder="e.g. Main Branch" value={newName} onChange={(e) => setNewName(e.target.value)} required className="rounded-[14px]" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="adminName">Admin Name</Label>
-                <Input id="adminName" placeholder="e.g. Mohamed Kamara" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} />
+                <Input id="adminName" placeholder="e.g. Mohamed Kamara" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="rounded-[14px]" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Admin WhatsApp Number *</Label>
-                <Input id="phone" type="tel" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required />
+                <Input id="phone" type="tel" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required className="rounded-[14px]" />
                 <p className="text-xs text-muted-foreground">The admin will log in with this number and receive their OTP here.</p>
               </div>
               {createError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
                   <p className="text-sm text-red-700 font-medium">{createError}</p>
                 </div>
               )}
               {otpWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
                   <p className="text-sm text-amber-800 font-medium">{otpWarning}</p>
                 </div>
               )}
-              <Button type="submit" disabled={creating || !newName || !newPhone} className="w-full">
+              <Button type="submit" disabled={creating || !newName || !newPhone} className="w-full h-12 rounded-2xl font-bold text-base shadow-lg shadow-primary/20">
                 {creating ? 'Creating...' : otpWarning ? 'Create Another' : 'Create Pharmacy'}
               </Button>
             </form>

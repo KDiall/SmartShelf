@@ -5,7 +5,8 @@ import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, CheckCircle2, AlertCircle, Loader2, FileUp, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FileText, CheckCircle2, AlertCircle, Loader2, FileUp, Trash2, Globe } from 'lucide-react';
 import { UploadDropzone } from '@/lib/uploadthing';
 
 export default function GuidelinesPage() {
@@ -96,14 +97,16 @@ export default function GuidelinesPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <div>
-          <h1 className="font-bold text-foreground text-3xl mb-1">Medical Guidelines</h1>
-          <p className="text-muted-foreground">Ground the AI assistant in official treatment guidelines by uploading PDFs.</p>
+        <div className="entrance" style={{ animationDelay: '0ms' }}>
+          <h1 className="font-bold text-foreground text-2xl tracking-tight mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Medical Guidelines
+          </h1>
+          <p className="text-sm text-[#64748b] font-medium">Ground the AI assistant in official treatment guidelines</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '50ms' }}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileUp className="h-5 w-5 text-primary" />
@@ -171,7 +174,7 @@ export default function GuidelinesPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '100ms' }}>
               <CardHeader>
                 <CardTitle className="text-lg">Managed Knowledge Base</CardTitle>
                 <CardDescription>Documents currently used to ground the AI chatbot.</CardDescription>
@@ -209,7 +212,7 @@ export default function GuidelinesPage() {
           </div>
 
           <div className="space-y-6">
-            <Card>
+            <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '150ms' }}>
               <CardHeader>
                 <CardTitle className="text-lg">Why this matters?</CardTitle>
               </CardHeader>

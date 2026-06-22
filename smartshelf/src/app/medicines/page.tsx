@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { getStockStatus } from '@/lib/risk-engine';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Edit, Trash2, ArrowLeft, Plus } from 'lucide-react';
+import { Edit, Trash2, ArrowLeft, Plus, Pill } from 'lucide-react';
 import { MedicineForm } from '@/components/medicine-form';
 import type { Medicine } from '@/types';
 
@@ -67,39 +68,48 @@ export default function MedicinesPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between entrance" style={{ animationDelay: '0ms' }}>
           <div className="flex items-center gap-3">
             <Link href="/more">
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/50">
                 <ArrowLeft className="h-6 w-6 text-muted-foreground" />
               </Button>
             </Link>
-            <h1 className="font-bold text-foreground text-3xl tracking-tight">
-              All Medicines
-            </h1>
+            <div>
+              <h1 className="font-bold text-foreground text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                All Medicines
+              </h1>
+              <p className="text-sm text-[#64748b] font-medium mt-0.5">Browse and manage your inventory</p>
+            </div>
           </div>
           <Button 
             onClick={() => setShowAddModal(true)} 
             size="icon" 
-            className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
+            className="h-11 w-11 rounded-2xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
           >
             <Plus className="h-6 w-6" />
           </Button>
         </div>
 
         {!isLoaded ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground text-lg">
-            Loading...
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
           </div>
         ) : medicines.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground text-lg">No medicines found.</p>
+          <Card className="glass-card rounded-3xl border-0 entrance" style={{ animationDelay: '100ms' }}>
+            <CardContent className="p-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Pill className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-[#0f172a] font-bold text-lg">No medicines found</p>
+              <p className="text-xs text-[#64748b] mt-2 font-medium">Tap + to add your first medicine.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {medicines.map((med) => {
+            {medicines.map((med, idx) => {
               const status = getStockStatus(med.currentStock, med.reorderThreshold);
               const barColor =
                 status === 'ok'
@@ -113,7 +123,7 @@ export default function MedicinesPage() {
               );
 
               return (
-                <Card key={med.id}>
+                <Card key={med.id} className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: `${idx * 60}ms` }}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex-1">
@@ -157,16 +167,17 @@ export default function MedicinesPage() {
 
         {/* Delete confirmation */}
         <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className="sm:max-w-sm rounded-3xl">
             <DialogHeader>
               <DialogTitle>Delete Medicine?</DialogTitle>
               <DialogDescription>This cannot be undone.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <DialogClose render={<Button variant="outline" className="rounded-2xl" />}>Cancel</DialogClose>
               <Button
                 variant="destructive"
                 onClick={() => deleteId && handleDelete(deleteId)}
+                className="rounded-2xl"
               >
                 Delete
               </Button>
@@ -176,7 +187,7 @@ export default function MedicinesPage() {
 
         {/* Add New Medicine Modal */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
             <DialogHeader>
               <DialogTitle>Add New Medicine</DialogTitle>
               <DialogDescription>

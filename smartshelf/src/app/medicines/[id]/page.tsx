@@ -5,6 +5,7 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { AuthGuard } from '@/components/auth-guard';
 import { MedicineForm } from '@/components/medicine-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Medicine } from '@/types';
 
 export default function EditMedicinePage() {
@@ -43,8 +44,9 @@ export default function EditMedicinePage() {
   if (!medicine) {
     return (
       <AuthGuard>
-        <div className="flex items-center justify-center h-40 text-muted-foreground">
-          Loading...
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-8 rounded-2xl w-1/3" />
+          <Skeleton className="h-64 rounded-2xl" />
         </div>
       </AuthGuard>
     );
@@ -52,18 +54,26 @@ export default function EditMedicinePage() {
 
   return (
     <AuthGuard>
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit {medicine.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MedicineForm
-            defaultValues={medicine}
-            onSubmit={onSubmit}
-            submitLabel="Save Changes"
-          />
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <div className="entrance" style={{ animationDelay: '0ms' }}>
+          <h1 className="font-bold text-foreground text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Edit {medicine.name}
+          </h1>
+          <p className="text-sm text-[#64748b] font-medium mt-0.5">Update medicine details</p>
+        </div>
+        <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '50ms' }}>
+          <CardHeader>
+            <CardTitle>Medicine Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MedicineForm
+              defaultValues={medicine}
+              onSubmit={onSubmit}
+              submitLabel="Save Changes"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </AuthGuard>
   );
 }
