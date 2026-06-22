@@ -266,14 +266,14 @@ export default function SettingsPage() {
             {/* Profile Fields */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Pharmacy Information</CardTitle>
+                <CardTitle className="text-lg">{user?.role === 'super_admin' ? 'Profile Information' : 'Pharmacy Information'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      Pharmacy Name
+                      {user?.role === 'super_admin' ? 'Full Name' : 'Pharmacy Name'}
                     </div>
                   </Label>
                   <Input
