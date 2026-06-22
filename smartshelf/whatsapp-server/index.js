@@ -121,23 +121,30 @@ const sessionSchema = new mongoose.Schema({
 const SessionModel = mongoose.model('Session', sessionSchema);
 
 const mongoStore = {
-  async sessionExists(session) {
-    const count = await SessionModel.countDocuments({ session });
+  _sessionId(sessionInfo) {
+    return typeof sessionInfo === 'string' ? sessionInfo : sessionInfo.session;
+  },
+  async sessionExists(sessionInfo) {
+    const sessionId = this._sessionId(sessionInfo);
+    const count = await SessionModel.countDocuments({ session: sessionId });
     return count > 0;
   },
-  async getSession(session) {
-    const doc = await SessionModel.findOne({ session }).lean();
+  async getSession(sessionInfo) {
+    const sessionId = this._sessionId(sessionInfo);
+    const doc = await SessionModel.findOne({ session: sessionId }).lean();
     return doc ? doc.data : null;
   },
-  async setSession(session, data) {
+  async setSession(sessionInfo, data) {
+    const sessionId = this._sessionId(sessionInfo);
     await SessionModel.updateOne(
-      { session },
-      { $set: { session, data } },
+      { session: sessionId },
+      { $set: { session: sessionId, data } },
       { upsert: true }
     );
   },
-  async deleteSession(session) {
-    await SessionModel.deleteOne({ session });
+  async deleteSession(sessionInfo) {
+    const sessionId = this._sessionId(sessionInfo);
+    await SessionModel.deleteOne({ session: sessionId });
   },
 };
 
