@@ -259,25 +259,29 @@ function stopHealthMonitoring(chatbotId) {
 }
 
 async function clearSession(chatbotId) {
+  const safeId = sanitizeClientId(chatbotId || 'session');
   try {
     // Clear from MongoDB RemoteAuth store
-    const sessionKey = chatbotId || 'session';
-    await mongoStore.deleteSession(sessionKey).catch(() => {});
-    console.log(`[clearSession] Cleared MongoDB session for ${sessionKey}`);
+    await mongoStore.deleteSession(safeId).catch(() => {});
+    console.log(`[clearSession] Cleared MongoDB session for ${safeId}`);
   } catch (e) {}
   try {
     // Also clean up any local session files as fallback
     const sessionDir = path.join(SESSION_DIR, 'session');
     if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
-    const id = String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_');
-    const sessionIdPath = path.join(SESSION_DIR, `session-${id}`);
+    const sessionIdPath = path.join(SESSION_DIR, `session-${safeId}`);
     if (fs.existsSync(sessionIdPath)) fs.rmSync(sessionIdPath, { recursive: true, force: true });
   } catch (e) {}
+}
+
+function sanitizeClientId(id) {
+  return id.replace(/[^A-Za-z0-9_-]/g, '_');
 }
 
 async function initializeClient(retryCount = 0, maxRetries = 3) {
   const chatbotId = getChatbotId();
   if (!chatbotId) throw new Error('CLIENT_PHONE_E164 (or WHATSAPP_CLIENT_PHONE) is not set in .env');
+  const safeClientId = sanitizeClientId(chatbotId);
 
   if (retryCount === 0 && initializing) {
     return { status: 'initializing', message: 'Already initializing, please wait' };
@@ -300,7 +304,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   const client = new Client({
     authStrategy: new RemoteAuth({
       store: mongoStore,
-      clientId: chatbotId,
+      clientId: safeClientId,
       dataPath: SESSION_DIR,
     }),
     takeoverOnConflict: true,
