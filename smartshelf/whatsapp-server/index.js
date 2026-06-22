@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -8,6 +8,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
+const mongoose = require('mongoose');
 
 // Load environment variables
 require('dotenv').config();
@@ -66,6 +67,7 @@ async function gracefulShutdown() {
   for (const [chatbotId] of sessionHealthChecks) {
     stopHealthMonitoring(chatbotId);
   }
+  try { await mongoose.disconnect(); } catch (e) {}
   console.log('Shutdown complete');
 }
 
@@ -111,16 +113,50 @@ const sessionHealthChecks = new Map();
 const HEALTH_CHECK_INTERVAL = 30000;
 let initializing = false;
 
+// MongoDB session schema for RemoteAuth persistence
+const sessionSchema = new mongoose.Schema({
+  session: { type: String, required: true, unique: true },
+  data: { type: mongoose.Schema.Types.Mixed, required: true },
+}, { timestamps: true });
+const SessionModel = mongoose.model('Session', sessionSchema);
+
+const mongoStore = {
+  async sessionExists(session) {
+    const count = await SessionModel.countDocuments({ session });
+    return count > 0;
+  },
+  async getSession(session) {
+    const doc = await SessionModel.findOne({ session }).lean();
+    return doc ? doc.data : null;
+  },
+  async setSession(session, data) {
+    await SessionModel.updateOne(
+      { session },
+      { $set: { session, data } },
+      { upsert: true }
+    );
+  },
+  async deleteSession(session) {
+    await SessionModel.deleteOne({ session });
+  },
+};
+
 // Message queue helper functions
 async function sendMessageDirectly(client, phoneE164, message) {
   try {
     const number = phoneE164.replace('+', '');
-    const wid = await client.getNumberId(number);
+    const wid = await Promise.race([
+      client.getNumberId(number),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('getNumberId timed out')), 8_000)),
+    ]);
     if (!wid || !wid._serialized) {
       throw new Error(`Number ${phoneE164} is not on WhatsApp`);
     }
     await new Promise(resolve => setTimeout(resolve, 300));
-    await client.sendMessage(wid._serialized, message, { sendSeen: false });
+    await Promise.race([
+      client.sendMessage(wid._serialized, message, { sendSeen: false }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('sendMessage timed out')), 15_000)),
+    ]);
     return { success: true, jid: wid._serialized };
   } catch (error) {
     return { success: false, error: error.message };
@@ -139,14 +175,20 @@ async function safeSendMessage(client, to, text) {
   const resolvedTo = await resolveJID(client, to);
   await ensureChatLoaded(client, resolvedTo);
   try {
-    await client.sendMessage(resolvedTo, text, { sendSeen: false });
+    await Promise.race([
+      client.sendMessage(resolvedTo, text, { sendSeen: false }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('sendMessage timed out')), 15_000)),
+    ]);
     return { success: true, to: resolvedTo };
   } catch (error) {
     const msg = String(error?.message || '');
     if (msg.includes('markedUnread') || msg.includes('sendSeen')) {
       await new Promise(resolve => setTimeout(resolve, 800));
       await ensureChatLoaded(client, resolvedTo);
-      await client.sendMessage(resolvedTo, text, { sendSeen: false });
+      await Promise.race([
+        client.sendMessage(resolvedTo, text, { sendSeen: false }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('sendMessage timed out on retry')), 15_000)),
+      ]);
       return { success: true, to: resolvedTo, retried: true };
     }
     throw error;
@@ -166,15 +208,14 @@ async function resolveJID(client, identifier) {
   const cleaned = identifier.replace(/[^\d]/g, '');
   const naiveJID = `${cleaned}@c.us`;
 
-// Ask WhatsApp for the real serialized JID. WhatsApp's internal id can differ
-  // from `${number}@c.us`, so blindly appending it only works for some numbers
-  // (e.g. saved contacts). getNumberId resolves the correct JID for any number
-  // that is actually registered on WhatsApp.
-  // NOTE: We reject @lid JIDs because they often cause silent delivery failures.
-  // The traditional @c.us format is more reliable for message delivery.
+  // Try getNumberId with a timeout. For numbers never contacted before,
+  // getNumberId can hang indefinitely, causing Render's proxy to return 502.
   try {
-    const wid = await client.getNumberId(cleaned);
-    if (wid && wid._serialized && !wid._serialized.endsWith('@lid')) {
+    const wid = await Promise.race([
+      client.getNumberId(cleaned),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('getNumberId timed out')), 8_000)),
+    ]);
+    if (wid && wid._serialized) {
       console.log(`[resolveJID] Resolved ${cleaned} -> ${wid._serialized}`);
       return wid._serialized;
     }
@@ -219,10 +260,15 @@ function stopHealthMonitoring(chatbotId) {
 
 async function clearSession(chatbotId) {
   try {
-    // LocalAuth uses 'session' (no suffix) when clientId is not provided
+    // Clear from MongoDB RemoteAuth store
+    const sessionKey = chatbotId || 'session';
+    await mongoStore.deleteSession(sessionKey).catch(() => {});
+    console.log(`[clearSession] Cleared MongoDB session for ${sessionKey}`);
+  } catch (e) {}
+  try {
+    // Also clean up any local session files as fallback
     const sessionDir = path.join(SESSION_DIR, 'session');
     if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
-    // Also try the clientId-based path for backwards compatibility
     const id = String(chatbotId).replace(/[^A-Za-z0-9_-]/g, '_');
     const sessionIdPath = path.join(SESSION_DIR, `session-${id}`);
     if (fs.existsSync(sessionIdPath)) fs.rmSync(sessionIdPath, { recursive: true, force: true });
@@ -251,21 +297,12 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Preserve an existing paired session across restarts. Only clean up
-  // Chrome lock files so the profile remains intact.
-  const sessionDir = path.join(SESSION_DIR, 'session');
-  if (fs.existsSync(sessionDir)) {
-    try {
-      for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
-        const p = path.join(sessionDir, name);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
-      }
-      console.log('[init] Preserved session, cleaned lock files');
-    } catch (e) {}
-  }
-
   const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
+    authStrategy: new RemoteAuth({
+      store: mongoStore,
+      clientId: chatbotId,
+      dataPath: SESSION_DIR,
+    }),
     takeoverOnConflict: true,
     takeoverTimeoutMs: 30000,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -508,14 +545,39 @@ app.get('/debug-env', (req, res) => {
   });
 });
 
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || '';
+
+async function connectMongo() {
+  if (!MONGODB_URI) {
+    console.log('⚠️  No MONGODB_URI set — RemoteAuth will not persist sessions across restarts.');
+    console.log('   Set MONGODB_URI in .env to enable persistent WhatsApp sessions.');
+    return false;
+  }
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ Connected to MongoDB for session persistence');
+    return true;
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    console.log('   WhatsApp session will NOT persist across restarts.');
+    return false;
+  }
+}
+
 const PORT = process.env.PORT || 3700;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
-});
 
-// Initialize WhatsApp after a short delay so Render's health check
-// succeeds immediately and the container is fully ready.
-setTimeout(() => {
-  initializeClient().catch(e => console.error('Init failed:', e.message));
-}, 3000);
+  // Connect to MongoDB first, then initialize WhatsApp
+  await connectMongo();
+
+  // Initialize WhatsApp after a short delay so Render's health check
+  // succeeds immediately and the container is fully ready.
+  setTimeout(() => {
+    initializeClient().catch(e => console.error('Init failed:', e.message));
+  }, 3000);
+});

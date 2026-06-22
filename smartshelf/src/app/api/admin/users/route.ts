@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendAccountCreatedMessage } from '@/lib/whatsapp';
+import { sendAccountCreatedMessage, sendWithRetry } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
@@ -104,13 +104,18 @@ export async function POST(request: Request) {
     data: { phone, code: otp, expiresAt },
   });
 
-  const result = await sendAccountCreatedMessage(phone, name || null, otp);
+  const result = await sendWithRetry(() => sendAccountCreatedMessage(phone, name || null, otp));
 
   if (!result.sent) {
     console.error(`[WHATSAPP FAIL] Account creation OTP for ${phone}: ${otp} | Error: ${result.error}`);
-  } else {
-    console.log(`[OTP] For new user ${phone}: ${otp}`);
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    await prisma.otp.deleteMany({ where: { phone, used: false } }).catch(() => {});
+    return NextResponse.json({
+      error: `Failed to send OTP to ${phone}. WhatsApp may be disconnected. OTP code: ${otp}. Share this code manually with the user.`,
+    }, { status: 502 });
   }
+
+  console.log(`[OTP] For new user ${phone}: ${otp}`);
 
   return NextResponse.json({
     user: {
@@ -123,7 +128,6 @@ export async function POST(request: Request) {
       pharmacyId: user.pharmacyId,
     },
     otpSent: result.sent,
-    whatsappError: result.error || null,
   }, { status: 201 });
 }
 

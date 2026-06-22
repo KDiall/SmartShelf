@@ -41,8 +41,9 @@ export async function POST(request: Request) {
 
   console.log('Webhook received:', JSON.stringify(payload).slice(0, 500));
 
-  // The new server sends a single message event per request
+  // Handle non-message events (connected, disconnected)
   if (payload.event !== 'message') {
+    console.log(`[Webhook] WhatsApp ${payload.event} event:`, JSON.stringify(payload));
     return NextResponse.json({ received: true });
   }
 

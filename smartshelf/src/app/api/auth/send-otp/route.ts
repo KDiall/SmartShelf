@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   if (!result.sent) {
     console.error(`[WHATSAPP FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
     return NextResponse.json(
-      { error: 'WhatsApp unavailable. Please try again or contact your admin.' },
+      { error: 'WhatsApp unavailable. Please try again or contact your admin.', otp },
       { status: 503 }
     );
   }

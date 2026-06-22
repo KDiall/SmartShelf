@@ -98,9 +98,29 @@ export async function reconnectWhatsAppServer(): Promise<{ success: boolean; err
   return { success: true };
 }
 
+async function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export async function sendWithRetry(
+  sendFn: () => Promise<WhatsAppResponse>,
+  maxRetries = 3
+): Promise<WhatsAppResponse> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const result = await sendFn();
+    if (result.sent) return result;
+    if (attempt < maxRetries) {
+      const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.log(`[WhatsApp] Retry ${attempt}/${maxRetries} in ${backoff}ms`);
+      await delay(backoff);
+    }
+  }
+  return { sent: false, error: `Failed after ${maxRetries} attempts` };
+}
+
 export async function sendOtpMessage(phone: string, otp: string): Promise<WhatsAppResponse> {
   const text = `Your SmartShelf verification code is: ${otp}\n\nThis code expires in 5 minutes.`;
-  return sendTextMessage(phone, text);
+  return sendWithRetry(() => sendTextMessage(phone, text));
 }
 
 export async function sendOrderMessage(
