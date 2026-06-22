@@ -4,7 +4,7 @@ import { sendAccountCreatedMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
-const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003']);
+const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003', '7004']);
 
 function isDemoPhone(phone: string): boolean {
   return DEMO_PHONES.has(phone);

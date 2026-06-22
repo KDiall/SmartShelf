@@ -4,7 +4,7 @@ import { sendOtpMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
-const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003']);
+const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003', '7004']);
 
 function isDemoMode(): boolean {
   return process.env.DEMO_MODE === 'true';
