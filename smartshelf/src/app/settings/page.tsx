@@ -151,7 +151,7 @@ export default function SettingsPage() {
                       <ImageIcon className="h-8 w-8 text-muted-foreground" />
                     )}
                   </div>
-                  <UploadButton
+                  {user?.role !== 'pharmacist' && <UploadButton
                     endpoint="medicineImageUploader"
                     input={{ token: localStorage.getItem('token') ?? '' }}
                     onClientUploadComplete={(res) => {
@@ -173,7 +173,7 @@ export default function SettingsPage() {
                       },
                       allowedContent: { display: 'none' },
                     }}
-                  />
+                  />}
                 </div>
               </CardContent>
             </Card>
