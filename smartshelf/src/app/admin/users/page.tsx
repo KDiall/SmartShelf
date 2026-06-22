@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, ShieldCheck, User, Store } from 'lucide-react';
+import { Plus, Trash2, ShieldCheck, User, Store, Users as UsersIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { normalizePhone } from '@/lib/phone';
+import { cn } from '@/lib/utils';
 import type { AdminUser, Pharmacy } from '@/types';
 
 export default function AdminUsersPage() {
@@ -135,75 +137,92 @@ export default function AdminUsersPage() {
 
   return (
     <AuthGuard>
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <h1 className="font-bold text-foreground text-3xl" style={{ fontSize: 28 }}>
-            Manage Users
-          </h1>
-          <Button onClick={() => setShowAddModal(true)} size="icon">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between entrance" style={{ animationDelay: '0ms' }}>
+          <div>
+            <h1 className="font-extrabold text-[#0f172a] text-2xl tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Manage Users
+            </h1>
+            <p className="text-sm text-[#64748b] font-medium mt-1">Add and manage staff accounts</p>
+          </div>
+          <Button onClick={() => setShowAddModal(true)} className="h-10 w-10 rounded-2xl">
             <Plus className="h-5 w-5" />
           </Button>
         </div>
 
         {pharmacy && currentUser?.role === 'admin' && (
-          <Card className="bg-primary/5 border-primary/20">
+          <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '50ms' }}>
             <CardContent className="p-4 flex items-center gap-3">
               <Store className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-semibold text-sm">{pharmacy.name}</p>
-                <p className="text-xs text-muted-foreground">Pharmacy {pharmacy.address ? `- ${pharmacy.address}` : ''}</p>
+                <p className="font-bold text-sm text-[#0f172a]">{pharmacy.name}</p>
+                <p className="text-xs text-[#64748b]">Pharmacy {pharmacy.address ? `- ${pharmacy.address}` : ''}</p>
               </div>
             </CardContent>
           </Card>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground text-lg">
-            Loading...
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-2xl" />
+            ))}
           </div>
         ) : users.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground text-lg">No users yet.</p>
+          <Card className="glass-card rounded-3xl border-0 entrance" style={{ animationDelay: '100ms' }}>
+            <CardContent className="p-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <UsersIcon className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-[#0f172a] font-bold text-lg">No users yet</p>
+              <p className="text-xs text-[#64748b] mt-2 font-medium">Tap the + button to add your first staff member.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {users.map((u) => (
-              <Card key={u.id}>
+            {users.map((u, idx) => (
+              <Card key={u.id} className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: `${idx * 60}ms` }}>
                 <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-foreground text-lg">
-                        {u.name || 'Unnamed'}
-                      </p>
-                      {u.role === 'super_admin' ? (
-                        <Badge variant="default" className="flex items-center gap-1 bg-purple-600">
-                          <ShieldCheck className="h-3 w-3" /> Super Admin
-                        </Badge>
-                      ) : u.role === 'admin' ? (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <ShieldCheck className="h-3 w-3" /> Admin
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <User className="h-3 w-3" /> Pharmacist
-                        </Badge>
-                      )}
-                      {!u.verified && (
-                        <span className="text-[10px] bg-warning text-white font-semibold px-2 py-0.5 rounded-full">Pending</span>
-                      )}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={cn(
+                      'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 font-bold text-sm',
+                      u.role === 'super_admin' ? 'bg-purple-50 text-purple-600' : u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-[#f1f5f9] text-[#64748b]'
+                    )}>
+                      {(u.name || u.phone)[0].toUpperCase()}
                     </div>
-                    <p className="text-sm text-muted-foreground">{u.phone}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-[#0f172a] text-base truncate">
+                          {u.name || 'Unnamed'}
+                        </p>
+                        {u.role === 'super_admin' ? (
+                          <Badge variant="default" className="flex items-center gap-1 bg-purple-600 text-[10px] px-2 py-0.5">
+                            <ShieldCheck className="h-3 w-3" /> Super Admin
+                          </Badge>
+                        ) : u.role === 'admin' ? (
+                          <Badge variant="secondary" className="flex items-center gap-1 text-[10px] px-2 py-0.5">
+                            <ShieldCheck className="h-3 w-3" /> Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="flex items-center gap-1 text-[10px] px-2 py-0.5">
+                            <User className="h-3 w-3" /> Pharmacist
+                          </Badge>
+                        )}
+                        {!u.verified && (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Pending</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#64748b] mt-0.5">{u.phone}</p>
+                    </div>
                   </div>
                   {currentUser?.id !== u.id && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeleteId(u.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-9 w-9 rounded-xl text-destructive hover:bg-destructive/10 shrink-0 ml-2"
                     >
-                      <Trash2 className="h-5 w-5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </CardContent>
@@ -214,16 +233,17 @@ export default function AdminUsersPage() {
 
         {/* Delete confirmation modal */}
         <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className="sm:max-w-sm rounded-3xl">
             <DialogHeader>
               <DialogTitle>Delete User?</DialogTitle>
               <DialogDescription>This cannot be undone. They will lose access immediately.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <DialogClose render={<Button variant="outline" className="rounded-2xl" />}>Cancel</DialogClose>
               <Button
                 variant="destructive"
                 onClick={() => deleteId && handleDelete(deleteId)}
+                className="rounded-2xl"
               >
                 Delete
               </Button>
@@ -233,7 +253,7 @@ export default function AdminUsersPage() {
 
         {/* Add user modal */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md rounded-3xl">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
               <DialogDescription>Create a new staff account. OTP will be sent to their WhatsApp.</DialogDescription>
@@ -246,6 +266,7 @@ export default function AdminUsersPage() {
                   placeholder="e.g. Mohamed Kamara"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
+                  className="rounded-[14px]"
                 />
               </div>
               <div className="space-y-2">
@@ -257,19 +278,19 @@ export default function AdminUsersPage() {
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   required
-                  className="text-lg"
+                  className="text-lg rounded-[14px]"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#64748b] font-medium">
                   OTP and account notification sent here.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role" className="text-[#64748b] font-semibold text-sm">Role</Label>
                 <select
                   id="role"
                   value={newRole}
                   onChange={(e) => { setNewRole(e.target.value); setNewPharmacyId(''); }}
-                  className="flex h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                  className="flex h-10 w-full min-w-0 rounded-[14px] border border-[rgba(15,23,42,0.1)] bg-white px-3 py-1 text-sm font-medium text-[#0f172a] transition-colors outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                 >
                   <option value="pharmacist">Pharmacist</option>
                   {currentUser?.role === 'super_admin' && <option value="admin">Admin</option>}
@@ -277,12 +298,12 @@ export default function AdminUsersPage() {
               </div>
               {currentUser?.role === 'super_admin' && (
                 <div className="space-y-2">
-                  <Label htmlFor="pharmacy">Pharmacy</Label>
+                  <Label htmlFor="pharmacy" className="text-[#64748b] font-semibold text-sm">Pharmacy</Label>
                   <select
                     id="pharmacy"
                     value={newPharmacyId}
                     onChange={(e) => setNewPharmacyId(e.target.value)}
-                    className="flex h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                    className="flex h-10 w-full min-w-0 rounded-[14px] border border-[rgba(15,23,42,0.1)] bg-white px-3 py-1 text-sm font-medium text-[#0f172a] transition-colors outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
                     <option value="">Select a pharmacy...</option>
                     {pharmacies.map((p) => (
@@ -290,22 +311,22 @@ export default function AdminUsersPage() {
                     ))}
                   </select>
                   {pharmacies.length === 0 && (
-                    <p className="text-xs text-destructive">No pharmacies exist. Create a pharmacy first.</p>
+                    <p className="text-xs text-destructive font-medium">No pharmacies exist. Create a pharmacy first.</p>
                   )}
                   {pharmacies.length > 0 && !newPharmacyId && (
-                    <p className="text-xs text-destructive">You must select a pharmacy before creating a user.</p>
+                    <p className="text-xs text-destructive font-medium">You must select a pharmacy before creating a user.</p>
                   )}
                 </div>
               )}
               {createError && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-                  <p className="text-sm text-destructive">{createError}</p>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
+                  <p className="text-sm text-red-700 font-medium">{createError}</p>
                 </div>
               )}
               <Button
                 type="submit"
                 disabled={creating || !newPhone || (currentUser?.role === 'super_admin' && !newPharmacyId)}
-                className="w-full"
+                className="w-full h-12 rounded-2xl font-bold text-base shadow-lg shadow-primary/20"
               >
                 {creating ? 'Creating...' : 'Create User & Send OTP'}
               </Button>
