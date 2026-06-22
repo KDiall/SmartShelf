@@ -4,8 +4,14 @@ import { sendOtpMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
+const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003']);
+
 function isDemoMode(): boolean {
   return process.env.DEMO_MODE === 'true';
+}
+
+function isDemoPhone(phone: string): boolean {
+  return DEMO_PHONES.has(phone) || isDemoMode();
 }
 
 function fixedOtp(): string {
@@ -26,7 +32,7 @@ export async function POST(request: Request) {
   phone = normalizePhone(phone);
 
   // DEMO MODE: auto-create user if not found, use fixed OTP, skip WhatsApp
-  if (isDemoMode()) {
+  if (isDemoPhone(phone)) {
     let user = await prisma.user.findUnique({ where: { phone } });
     if (!user) {
       const pharmacy = await prisma.pharmacy.findFirst();
@@ -47,7 +53,7 @@ export async function POST(request: Request) {
     });
 
     console.log(`[DEMO OTP] For ${phone}: ${otp}`);
-    return NextResponse.json({ message: 'OTP sent (demo mode)', otp });
+    return NextResponse.json({ message: 'OTP sent (demo mode)' });
   }
 
   // NORMAL MODE: look up user, send via WhatsApp
@@ -68,11 +74,11 @@ export async function POST(request: Request) {
   if (!result.sent) {
     console.error(`[WHATSAPP FAIL] OTP for ${phone}: ${otp} | Error: ${result.error}`);
     return NextResponse.json(
-      { error: 'WhatsApp unavailable. Please try again or contact your admin.', otp },
+      { error: 'WhatsApp unavailable. Please try again or contact your admin.' },
       { status: 503 }
     );
   }
 
   console.log(`[OTP] For ${phone}: ${otp}`);
-  return NextResponse.json({ message: 'OTP sent via WhatsApp', otp });
+  return NextResponse.json({ message: 'OTP sent via WhatsApp' });
 }
