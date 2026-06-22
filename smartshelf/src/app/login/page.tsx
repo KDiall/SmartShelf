@@ -50,7 +50,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to send OTP');
       }
 
-      router.push(`/verify?phone=${encodeURIComponent(normalizedPhone)}${data.otp ? `&otp=${data.otp}` : ''}`);
+      router.push(`/verify?phone=${encodeURIComponent(normalizedPhone)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
