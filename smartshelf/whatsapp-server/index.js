@@ -244,17 +244,27 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Clean up Chrome lock files from a previous unclean shutdown so Chrome
-  // does not refuse to start with "profile appears to be in use".
-  // The user-data-dir is managed by LocalAuth at SESSION_DIR/session(-clientId).
-  try {
-    for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
-      for (const base of [SESSION_DIR, path.join(SESSION_DIR, 'session')]) {
-        const p = path.join(base, name);
+  // Check if we have a previously-paired session. If not, delete any stale
+  // Chrome profile from a failed startup to avoid "profile in use" errors.
+  // Once the user scans the QR, creds.json is saved and we skip this cleanup.
+  const sessionDir = path.join(SESSION_DIR, 'session');
+  const hasValidSession = fs.existsSync(path.join(sessionDir, 'creds.json'));
+  if (!hasValidSession) {
+    try {
+      if (fs.existsSync(sessionDir)) {
+        fs.rmSync(sessionDir, { recursive: true, force: true });
+        console.log('[init] No valid session found — removed stale Chrome profile');
+      }
+    } catch (e) {}
+  } else {
+    // Just clean up lock files
+    try {
+      for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
+        const p = path.join(sessionDir, name);
         if (fs.existsSync(p)) fs.unlinkSync(p);
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
