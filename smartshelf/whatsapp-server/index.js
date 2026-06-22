@@ -244,30 +244,37 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Check if we have a previously-paired session. If not, delete any stale
-  // Chrome profile from a failed startup to avoid "profile in use" errors.
-  // Once the user scans the QR, creds.json is saved and we skip this cleanup.
+  // Check if Chrome has a previously-paired WhatsApp session.
+  // The session data lives inside Chrome's IndexedDB (Default/ directory),
+  // not as a separate creds.json file. We detect a valid session by checking
+  // for the Default/IndexedDB directory and Local State file.
   const sessionDir = path.join(SESSION_DIR, 'session');
-  const hasValidSession = fs.existsSync(path.join(sessionDir, 'creds.json'));
-  if (!hasValidSession) {
-    try {
-      if (fs.existsSync(sessionDir)) {
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        console.log('[init] No valid session found — removed stale Chrome profile');
-      }
-    } catch (e) {}
-  } else {
-    // Just clean up lock files
+  const hasChromeProfile = (
+    fs.existsSync(path.join(sessionDir, 'Default', 'IndexedDB')) &&
+    fs.existsSync(path.join(sessionDir, 'Local State'))
+  );
+  if (hasChromeProfile) {
+    // Clean up lock files so Chrome can start
     try {
       for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
         const p = path.join(sessionDir, name);
         if (fs.existsSync(p)) fs.unlinkSync(p);
       }
     } catch (e) {}
+  } else {
+    // No valid session — delete stale Chrome profile to avoid lock conflicts
+    try {
+      if (fs.existsSync(sessionDir)) {
+        fs.rmSync(sessionDir, { recursive: true, force: true });
+        console.log('[init] No valid session found — cleared stale Chrome profile');
+      }
+    } catch (e) {}
   }
 
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
+    takeoverOnConflict: true,
+    takeoverTimeoutMs: 30000,
     puppeteer: {
       headless: true,
       args: [
@@ -354,6 +361,10 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         headers: { 'x-api-key': getAgentApiKey() }
       });
     } catch (e) {}
+    // Auto-reconnect after a short delay
+    setTimeout(() => {
+      initializeClient().catch(e => console.error('Auto-reconnect failed:', e.message));
+    }, 5000);
   });
 
   try {
