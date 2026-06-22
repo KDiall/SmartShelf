@@ -59,15 +59,24 @@ export async function POST(request: Request) {
   // Resolve sender's pharmacy from their phone number
   const senderPhone = normalizePhone(from.split('@')[0]);
   let pharmacyId: string | undefined;
+  let senderFound = false;
   try {
     const sender = senderPhone
-      ? await prisma.user.findUnique({ where: { phone: senderPhone }, select: { pharmacyId: true } })
+      ? await prisma.user.findUnique({ where: { phone: senderPhone }, select: { pharmacyId: true, role: true } })
       : null;
+    senderFound = !!sender;
     pharmacyId = sender?.pharmacyId ?? undefined;
-    console.log(`Sender phone=${senderPhone} pharmacyId=${pharmacyId || 'none (super_admin or unknown)'}`);
+    console.log(`Sender phone=${senderPhone} pharmacyId=${pharmacyId || 'none'} role=${sender?.role || 'unknown'}`);
   } catch (err) {
     console.error('Failed to look up sender pharmacy:', err);
-    // fall through — generateResponse will see all data if pharmacyId is undefined
+  }
+
+  if (!senderFound) {
+    console.log(`Rejecting unknown sender: ${senderPhone}`);
+    return NextResponse.json({
+      answer: 'You are not registered with any pharmacy. Contact your pharmacy admin to create your account.',
+      to: from,
+    });
   }
 
   let reply: string;
