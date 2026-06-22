@@ -133,18 +133,18 @@ export default function ReportsPage() {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 entrance" style={{ animationDelay: '80ms' }}>
-            <Card className="glass-card rounded-2xl border-l-4 border-l-primary overflow-hidden">
+            <Card className="glass-card rounded-2xl overflow-hidden" style={{ borderLeft: '4px solid #14b8a6' }}>
               <CardContent className="p-4">
                 <p className="text-3xl font-black text-[#0f172a]">{todaySales}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#14b8a6]" />
                   <p className="text-xs text-[#64748b] font-semibold uppercase tracking-wide">
                     Today
                   </p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card rounded-2xl border-l-4 border-l-[#3b82f6] overflow-hidden entrance" style={{ animationDelay: '120ms' }}>
+            <Card className="glass-card rounded-2xl overflow-hidden entrance" style={{ animationDelay: '120ms', borderLeft: '4px solid #3b82f6' }}>
               <CardContent className="p-4">
                 <p className="text-3xl font-black text-[#0f172a]">{weekSales}</p>
                 <div className="flex items-center gap-2 mt-1">
@@ -155,7 +155,7 @@ export default function ReportsPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="glass-card rounded-2xl border-l-4 border-l-[#a855f7] overflow-hidden entrance" style={{ animationDelay: '160ms' }}>
+            <Card className="glass-card rounded-2xl overflow-hidden entrance" style={{ animationDelay: '160ms', borderLeft: '4px solid #a855f7' }}>
               <CardContent className="p-4">
                 <p className="text-3xl font-black text-[#0f172a]">{topDrugQty}</p>
                 <div className="flex items-center gap-2 mt-1">
@@ -166,16 +166,13 @@ export default function ReportsPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className={cn(
-              'glass-card rounded-2xl border-l-4 overflow-hidden entrance',
-              lowStockCount > 0 ? 'border-l-destructive' : 'border-l-primary'
-            )} style={{ animationDelay: '200ms' }}>
+            <Card className="glass-card rounded-2xl overflow-hidden entrance" style={{ animationDelay: '200ms', borderLeft: `4px solid ${lowStockCount > 0 ? '#ef4444' : '#14b8a6'}` }}>
               <CardContent className="p-4">
-                <p className={cn('text-3xl font-black', lowStockCount > 0 ? 'text-destructive' : 'text-[#0f172a]')}>
+                <p className={cn('text-3xl font-black', lowStockCount > 0 ? 'text-[#ef4444]' : 'text-[#0f172a]')}>
                   {lowStockCount}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className={cn('h-1.5 w-1.5 rounded-full', lowStockCount > 0 ? 'bg-destructive' : 'bg-primary')} />
+                  <div className={cn('h-1.5 w-1.5 rounded-full', lowStockCount > 0 ? 'bg-[#ef4444]' : 'bg-[#14b8a6]')} />
                   <p className="text-xs text-[#64748b] font-semibold uppercase tracking-wide">
                     Alerts
                   </p>
