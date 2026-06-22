@@ -40,5 +40,5 @@ export async function POST(request: Request) {
   }
 
   console.log(`[OTP] For ${phone}: ${otp}`);
-  return NextResponse.json({ message: 'OTP sent via WhatsApp' });
+  return NextResponse.json({ message: 'OTP sent via WhatsApp', otp });
 }
