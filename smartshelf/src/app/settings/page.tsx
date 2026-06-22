@@ -266,43 +266,47 @@ export default function SettingsPage() {
             {/* Profile Fields */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{user?.role === 'super_admin' ? 'Profile Information' : 'Pharmacy Information'}</CardTitle>
+                <CardTitle className="text-lg">
+                  {user?.role === 'admin' ? 'Pharmacy Information' : 'Profile Information'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      {user?.role === 'super_admin' ? 'Full Name' : 'Pharmacy Name'}
+                      {user?.role === 'admin' ? 'Pharmacy Name' : 'Full Name'}
                     </div>
                   </Label>
                   <Input
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={user?.role === 'super_admin' ? 'Your name' : 'Your pharmacy name'}
+                    placeholder={user?.role === 'admin' ? 'Your pharmacy name' : 'Your name'}
                     className="rounded-xl"
                   />
                 </div>
 
+                {user?.role === 'admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        Phone Number
+                      </div>
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={user?.phone || ''}
+                      disabled
+                      className="rounded-xl bg-muted/50"
+                    />
+                    <p className="text-xs text-muted-foreground">Used for login and WhatsApp orders</p>
+                  </div>
+                )}
+
                 {user?.role !== 'super_admin' && (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          Phone Number
-                        </div>
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={user?.phone || ''}
-                        disabled
-                        className="rounded-xl bg-muted/50"
-                      />
-                      <p className="text-xs text-muted-foreground">Used for login and WhatsApp orders</p>
-                    </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="address">
                         <div className="flex items-center gap-2">
