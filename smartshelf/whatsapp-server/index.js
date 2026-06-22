@@ -457,19 +457,28 @@ app.get('/healthz', (req, res) => {
 
 app.get('/debug-env', (req, res) => {
   let sessionFiles = [];
+  let sessionSubFiles = [];
   try {
     if (fs.existsSync(SESSION_DIR)) {
       sessionFiles = fs.readdirSync(SESSION_DIR, { withFileTypes: true }).map(e => ({
         name: e.name,
         isDir: e.isDirectory(),
       }));
+      const sessionSub = path.join(SESSION_DIR, 'session');
+      if (fs.existsSync(sessionSub)) {
+        sessionSubFiles = fs.readdirSync(sessionSub, { withFileTypes: true }).map(e => ({
+          name: e.name,
+          isDir: e.isDirectory(),
+        }));
+      }
     }
   } catch (e) { sessionFiles = [{ error: e.message }]; }
 
   res.json({
     sessionDir: SESSION_DIR,
     sessionDirExists: fs.existsSync(SESSION_DIR),
-    sessionFiles,
+    sessionDirContents: sessionFiles,
+    sessionSubDirContents: sessionSubFiles,
     chromeUserData: 'ephemeral (/tmp/chrome-profile-*)',
     clientPhone: getChatbotId(),
     connected: !!clients.get(getChatbotId())?.info?.wid?.user,
