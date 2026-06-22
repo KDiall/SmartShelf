@@ -5,11 +5,12 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { getStockStatus } from '@/lib/risk-engine';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Loader2 } from 'lucide-react';
 import { MedicineForm } from '@/components/medicine-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { Medicine } from '@/types';
@@ -89,8 +90,10 @@ export default function StockPage() {
         </div>
 
         {!isLoaded ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground text-lg">
-            Loading...
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <Card>
@@ -102,7 +105,7 @@ export default function StockPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {filtered.map((med) => {
+            {filtered.map((med, idx) => {
               const status = getStockStatus(med.currentStock, med.reorderThreshold);
               const barColor =
                 status === 'ok'
@@ -116,8 +119,8 @@ export default function StockPage() {
               );
 
               return (
-                <Link key={med.id} href={`/medicines/${med.id}`} className="block">
-                  <Card className="active:scale-[0.99] transition-transform">
+                <Link key={med.id} href={`/medicines/${med.id}`} className="block entrance" style={{ animationDelay: `${idx * 60}ms` }}>
+                  <Card className="glass-card active:scale-[0.99] transition-transform rounded-2xl">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">

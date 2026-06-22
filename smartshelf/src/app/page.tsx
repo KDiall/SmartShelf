@@ -10,9 +10,10 @@ import { useCountUp } from '@/hooks/use-count-up';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Clock, Loader2, Pill, ShoppingBag, Plus } from 'lucide-react';
+import { AlertTriangle, Clock, Pill, ShoppingBag, Plus } from 'lucide-react';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -27,22 +28,39 @@ function getHealthStatus(score: number): { label: string; color: string; ringCol
   return { label: 'CRITICAL', color: 'text-[#ef4444]', ringColor: '#ef4444' };
 }
 
-function HealthRing({ score }: { score: number }) {
+function HealthRing({ score, loading }: { score: number; loading?: boolean }) {
   const status = getHealthStatus(score);
   const [mounted, setMounted] = useState(false);
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
   const offset = mounted ? circumference - (score / 100) * circumference : circumference;
-  const displayScore = useCountUp(score, 1000, mounted);
+  const displayScore = useCountUp(score, 1000, mounted && !loading);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 100);
     return () => clearTimeout(t);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="relative flex items-center justify-center">
+        <Skeleton className="h-[220px] w-[220px] rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex items-center justify-center">
       <svg width="220" height="220" className="-rotate-90">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         <circle cx="110" cy="110" r={radius} fill="none" stroke="rgba(15,23,42,0.06)" strokeWidth="12" />
         <circle
           cx="110" cy="110" r={radius}
@@ -53,6 +71,7 @@ function HealthRing({ score }: { score: number }) {
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           className="animate-ring"
+          style={{ filter: 'drop-shadow(0 0 6px ' + status.ringColor + '40)' }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -107,9 +126,33 @@ export default function HomePage() {
   return (
     <AuthGuard>
       {!isLoaded ? (
-        <div className="flex flex-col items-center justify-center h-80 text-muted-foreground">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-lg font-bold uppercase tracking-widest opacity-50">Loading Dashboard</p>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+            <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+          </div>
+          <Card className="glass-card rounded-3xl overflow-hidden">
+            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+              <Skeleton className="h-[220px] w-[220px] rounded-full shrink-0" />
+              <div className="flex-1 space-y-3 w-full">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-40" />
+                <Skeleton className="h-4 w-56" />
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="h-7 w-24 rounded-full" />
+                  <Skeleton className="h-7 w-28 rounded-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="space-y-6">

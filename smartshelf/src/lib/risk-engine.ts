@@ -64,12 +64,19 @@ export function computeAlerts(
 }
 
 export function computeHealthScore(alerts: StockAlert[]): number {
-  let score = 100;
-  for (const alert of alerts) {
-    if (alert.severity === 'critical') score -= 15;
-    else if (alert.severity === 'warning') score -= 5;
-  }
-  return Math.max(0, score);
+  const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
+  const warningCount = alerts.filter((a) => a.severity === 'warning').length;
+  const totalIssues = criticalCount + warningCount;
+
+  if (totalIssues === 0) return 100;
+
+  // Each critical alert costs ~20 points, each warning costs ~8.
+  // Cap at 0 so the score is always between 0–100.
+  const score = Math.max(0, 100 - criticalCount * 20 - warningCount * 8);
+
+  // With many medicines, a single critical alert shouldn't tank the score.
+  // The formula above already captures that naturally.
+  return score;
 }
 
 export function getStockStatus(
