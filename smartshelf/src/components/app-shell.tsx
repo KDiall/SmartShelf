@@ -162,7 +162,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content area */}
-      <div className={cn('flex-1 transition-all duration-200', sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60')}>
+      <div className={cn('flex-1 transition-all duration-200 bg-[#f5f7fa]', sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60')}>
         <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-border">
           <div className="flex items-center justify-between h-14 px-4 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
