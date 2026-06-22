@@ -280,58 +280,62 @@ export default function SettingsPage() {
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Your pharmacy name"
+                    placeholder={user?.role === 'super_admin' ? 'Your name' : 'Your pharmacy name'}
                     className="rounded-xl"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      Phone Number
+                {user?.role !== 'super_admin' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          Phone Number
+                        </div>
+                      </Label>
+                      <Input
+                        id="phone"
+                        value={user?.phone || ''}
+                        disabled
+                        className="rounded-xl bg-muted/50"
+                      />
+                      <p className="text-xs text-muted-foreground">Used for login and WhatsApp orders</p>
                     </div>
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={user?.phone || ''}
-                    disabled
-                    className="rounded-xl bg-muted/50"
-                  />
-                  <p className="text-xs text-muted-foreground">Used for login and WhatsApp orders</p>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="address">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      Address
+                    <div className="space-y-2">
+                      <Label htmlFor="address">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          Address
+                        </div>
+                      </Label>
+                      <Input
+                        id="address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Street, city, etc."
+                        className="rounded-xl"
+                      />
                     </div>
-                  </Label>
-                  <Input
-                    id="address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Street, city, etc."
-                    className="rounded-xl"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      Location
+                    <div className="space-y-2">
+                      <Label htmlFor="location">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          Location
+                        </div>
+                      </Label>
+                      <Input
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Freetown, Sierra Leone"
+                        className="rounded-xl"
+                      />
                     </div>
-                  </Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Freetown, Sierra Leone"
-                    className="rounded-xl"
-                  />
-                </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
