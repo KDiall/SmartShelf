@@ -244,32 +244,17 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
-  // Check if Chrome has a previously-paired WhatsApp session.
-  // The session data lives inside Chrome's IndexedDB (Default/ directory),
-  // not as a separate creds.json file. We detect a valid session by checking
-  // for the Default/IndexedDB directory and Local State file.
+  // Delete the entire Chrome profile on every start to avoid stale data
+  // causing "profile in use" or corrupt session errors.
+  // Once the user scans a QR and the session proves stable, we can enable
+  // persistence by preserving the session directory.
   const sessionDir = path.join(SESSION_DIR, 'session');
-  const hasChromeProfile = (
-    fs.existsSync(path.join(sessionDir, 'Default', 'IndexedDB')) &&
-    fs.existsSync(path.join(sessionDir, 'Local State'))
-  );
-  if (hasChromeProfile) {
-    // Clean up lock files so Chrome can start
-    try {
-      for (const name of ['SingletonLock', 'SingletonSocket', 'SingletonCookie']) {
-        const p = path.join(sessionDir, name);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
-      }
-    } catch (e) {}
-  } else {
-    // No valid session — delete stale Chrome profile to avoid lock conflicts
-    try {
-      if (fs.existsSync(sessionDir)) {
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        console.log('[init] No valid session found — cleared stale Chrome profile');
-      }
-    } catch (e) {}
-  }
+  try {
+    if (fs.existsSync(sessionDir)) {
+      fs.rmSync(sessionDir, { recursive: true, force: true });
+      console.log('[init] Cleared Chrome profile for fresh start');
+    }
+  } catch (e) {}
 
   const client = new Client({
     authStrategy: new LocalAuth({ dataPath: SESSION_DIR }),
@@ -284,6 +269,15 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-gpu',
         '--single-process',
         '--no-zygote',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--disable-translate',
+        '--disable-default-apps',
+        '--mute-audio',
+        '--no-first-run',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
