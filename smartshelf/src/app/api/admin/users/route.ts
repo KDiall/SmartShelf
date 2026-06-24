@@ -4,7 +4,7 @@ import { sendAccountCreatedMessage, sendWithRetry } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
-const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003', '7004']);
+const DEMO_PHONES = new Set(['23231569311', '23278077127', '23299064007', '23288538947', '23232966674']);
 
 function isDemoMode(): boolean {
   return process.env.DEMO_MODE === 'true';
