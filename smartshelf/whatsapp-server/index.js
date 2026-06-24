@@ -362,6 +362,9 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         if (media) mediaData = { mimetype: media.mimetype, filename: media.filename, data: media.data };
       }
 
+      // Resolve sender's actual phone number via contact (handles LID JIDs)
+      const contact = await message.getContact().catch(() => null);
+      const contactNumber = contact?.number || '';
       const jidLocal = message.from.split('@')[0];
       const webhookPayload = {
         chatbotId,
@@ -369,7 +372,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         message: message.body,
         from: message.from,
         email: `${jidLocal}@gmail.com`,
-        phoneE164: `+${jidLocal}`,
+        phoneE164: contactNumber ? `+${contactNumber}` : `+${jidLocal}`,
         messageType: message.type,
         hasMedia: message.hasMedia,
         ...(mediaData && { media: mediaData })
