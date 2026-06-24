@@ -96,6 +96,15 @@ export async function POST(request: Request) {
     });
   }
 
+  // Super admin or any user without a pharmacy has no business with the bot
+  if (senderFound && !pharmacyId) {
+    console.log(`Rejecting user with no pharmacy: ${senderPhone}`);
+    return NextResponse.json({
+      answer: 'Your account is not linked to any pharmacy.',
+      to: from,
+    });
+  }
+
   let reply: string;
   try {
     reply = await generateResponse(text, pharmacyId);
