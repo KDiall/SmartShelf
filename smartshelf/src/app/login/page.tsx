@@ -94,14 +94,14 @@ export default function LoginPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+23231569311"
+                  placeholder="031 569 311"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   className="text-lg rounded-[14px] border-[rgba(15,23,42,0.1)] focus:border-primary h-12"
                 />
                 <p className="text-xs text-[#94a3b8] font-medium">
-                  Enter your WhatsApp number to receive a login code.
+                  Enter your WhatsApp number (e.g. 031 569 311 or +232 31 569 311).
                 </p>
               </div>
 
