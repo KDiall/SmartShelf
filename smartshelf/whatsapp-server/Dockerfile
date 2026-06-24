@@ -59,4 +59,4 @@ RUN mkdir -p /data/.wwebjs_auth && chmod -R 777 /data
 # Render expects services to listen on port 10000 by default
 EXPOSE 10000
 
-CMD ["node", "index.js"]
+CMD mkdir -p /data/.wwebjs_auth && node index.js

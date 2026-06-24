@@ -43,7 +43,12 @@ const getApiKey = () => (process.env.API_KEY || process.env.WHATSAPP_API_KEY || 
 // Where WhatsApp session data is stored. On hosts with an ephemeral filesystem
 // (e.g. Render without a disk), point SESSION_DIR at a mounted persistent disk
 // so the bot does not need re-linking after every restart/deploy.
-const SESSION_DIR = (process.env.SESSION_DIR || path.join(__dirname, '.wwebjs_auth')).trim();
+// Render automatically sets RENDER_DISK_PATH when a disk is attached.
+const SESSION_DIR = (
+  process.env.SESSION_DIR ||
+  (process.env.RENDER_DISK_PATH ? path.join(process.env.RENDER_DISK_PATH, '.wwebjs_auth') : null) ||
+  path.join(__dirname, '.wwebjs_auth')
+).trim();
 // Chromium binary for Puppeteer. The puppeteer Docker base image provides this
 // via PUPPETEER_EXECUTABLE_PATH; fall back to Puppeteer's own resolution locally.
 const CHROME_PATH = (process.env.PUPPETEER_EXECUTABLE_PATH || '').trim();
@@ -268,6 +273,9 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   }
 
   if (!(await checkNetwork())) throw new Error('Network check failed');
+
+  // Ensure session directory exists (disk mount may be empty at runtime)
+  fs.mkdirSync(SESSION_DIR, { recursive: true });
 
   const client = new Client({
     authStrategy: new LocalAuth({
