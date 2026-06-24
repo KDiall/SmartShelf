@@ -40,6 +40,9 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearm
 
 WORKDIR /app
 
+# Cache-bust: increment this to force a full rebuild (Docker layer cache)
+ARG CACHEBUST=1
+
 # Prevent puppeteer from downloading its own Chrome during npm install.
 # We already installed the system Chrome above.
 ENV PUPPETEER_SKIP_DOWNLOAD=true
@@ -50,6 +53,9 @@ ENV NODE_OPTIONS="--max-old-space-size=256 --expose-gc"
 
 COPY package*.json ./
 RUN npm install
+
+# Invalidate cache when CACHEBUST changes
+RUN echo "build ${CACHEBUST}"
 
 COPY . .
 
