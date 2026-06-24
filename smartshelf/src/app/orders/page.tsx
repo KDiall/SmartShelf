@@ -364,14 +364,18 @@ export default function OrdersPage() {
 
         {/* Send */}
         {canOrder ? (
-          <Button
-            onClick={() => setShowReviewDialog(true)}
-            disabled={validItems.length === 0 || sending}
-            className="w-full h-16 bg-[#25D366] hover:bg-[#25D366]/90 rounded-2xl shadow-lg text-white font-bold text-xl gap-3 border-none"
-          >
-            <MessageCircle className="h-7 w-7" />
-            {sending ? 'Sending...' : validItems.length === 0 ? 'Generate WhatsApp Order' : `Generate WhatsApp Order (${validItems.length} items)`}
-          </Button>
+          <div className="relative">
+            <div className="absolute -top-2.5 right-4 z-10 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow">
+              Coming Soon
+            </div>
+            <Button
+              disabled
+              className="w-full h-16 bg-gray-400 rounded-2xl shadow-lg text-white font-bold text-xl gap-3 border-none cursor-not-allowed"
+            >
+              <MessageCircle className="h-7 w-7" />
+              Generate WhatsApp Order
+            </Button>
+          </div>
         ) : (
           <div className="glass-card rounded-2xl p-4 text-center">
             <p className="text-sm text-muted-foreground font-medium">Only pharmacy admins can place stock orders.</p>
@@ -410,9 +414,9 @@ export default function OrdersPage() {
               <Button variant="outline" onClick={() => setShowReviewDialog(false)} className="flex-1 h-11 rounded-xl">
                 Edit
               </Button>
-              <Button onClick={handleSendOrder} disabled={validItems.length === 0} className="flex-1 h-11 rounded-xl font-bold gap-2 bg-[#25D366] hover:bg-[#25D366]/90">
+              <Button disabled className="flex-1 h-11 rounded-xl font-bold gap-2 bg-gray-400">
                 <MessageCircle className="h-5 w-5" />
-                Generate Order
+                Coming Soon
               </Button>
             </div>
           </DialogContent>
