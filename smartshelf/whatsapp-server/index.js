@@ -110,7 +110,7 @@ const requireApiKey = (req, res, next) => {
 const qrCodes = new Map();
 const clients = new Map();
 const sessionHealthChecks = new Map();
-const HEALTH_CHECK_INTERVAL = 120000;
+const HEALTH_CHECK_INTERVAL = 30000;
 let initializing = false;
 
 // MongoDB session schema for RemoteAuth persistence
@@ -254,7 +254,7 @@ function startHealthMonitoring(chatbotId, client) {
         console.warn(`[health] ${chatbotId} state=${state}`);
       }
     } catch (e) {}
-    // Periodic memory hint
+    // Force GC every 30s to keep RSS within Render's 512MB limit
     if (global.gc && typeof global.gc === 'function') {
       try { global.gc(); } catch (e) {}
     }
@@ -338,6 +338,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-sync',
         '--disable-translate',
         '--disable-default-apps',
+        '--disable-notifications',
         '--mute-audio',
         '--no-first-run',
         '--disable-background-timer-throttling',
