@@ -49,12 +49,13 @@ export async function POST(request: Request) {
 
   const text = payload.message || '';
   const from = payload.from; // This is the JID (e.g. 123456789@c.us)
+  const payloadPhone = payload.phoneE164 ? normalizePhone(payload.phoneE164) : '';
 
   if (!text || !from) {
     return NextResponse.json({ received: true });
   }
 
-  console.log(`Processing msg from ${from}: "${text.slice(0, 100)}"`);
+  console.log(`Processing msg from ${from} phoneE164=${payload.phoneE164 || 'none'}: "${text.slice(0, 100)}"`);
 
   // Resolve sender's pharmacy from their phone number
   const senderPhone = normalizePhone(from.split('@')[0]);
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   try {
     let sender: { pharmacyId: string | null; role: string } | null = null;
 
-    // 1. Exact match by full phone number
+    // 1. Exact match by phone number extracted from JID
     if (senderPhone) {
       sender = await prisma.user.findUnique({
         where: { phone: senderPhone },
@@ -71,7 +72,15 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Fallback: try matching last digits (handles demo short codes like 7000
+    // 2. Try payload's phoneE164 if JID-based lookup failed
+    if (!sender && payloadPhone) {
+      sender = await prisma.user.findUnique({
+        where: { phone: payloadPhone },
+        select: { pharmacyId: true, role: true },
+      });
+    }
+
+    // 3. Fallback: try matching last digits (handles demo short codes like 7000
     //    when the user texts from a real number like +23276000000)
     if (!sender && senderPhone) {
       const rawDigits = from.split('@')[0].replace(/\D/g, '');
@@ -83,17 +92,18 @@ export async function POST(request: Request) {
 
     senderFound = !!sender;
     pharmacyId = sender?.pharmacyId ?? undefined;
-    console.log(`Sender phone=${senderPhone} pharmacyId=${pharmacyId || 'none'} role=${sender?.role || 'unknown'}`);
+    console.log(`Sender phone=${senderPhone} payloadPhone=${payloadPhone || 'none'} pharmacyId=${pharmacyId || 'none'} role=${sender?.role || 'unknown'}`);
   } catch (err) {
     console.error('Failed to look up sender pharmacy:', err);
   }
 
   if (!senderFound) {
-    // Allow super admin via env var even if not in DB
+    // Allow super admin via env var even if not in DB or JID mismatch
     const superAdminPhone = normalizePhone(
       process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23231569311'
     );
-    if (senderPhone && superAdminPhone && senderPhone === superAdminPhone) {
+    if ((senderPhone && superAdminPhone && senderPhone === superAdminPhone) ||
+        (payloadPhone && superAdminPhone && payloadPhone === superAdminPhone)) {
       pharmacyId = undefined;
       senderFound = true;
       console.log('Super admin identified via env var fallback');
