@@ -15,12 +15,22 @@ interface Props {
 export function MedicineTile({ medicine, gradient = 'from-[#14b8a6] to-[#2dd4bf]', onEdit, onRemove }: Props) {
   const recordSale = usePharmacyStore((s) => s.recordSale);
   const [toast, setToast] = useState(false);
+  const [quantity, setQuantity] = useState(0);
+  const [lastSold, setLastSold] = useState(0);
 
   async function handleSale(e: React.MouseEvent) {
     e.stopPropagation();
-    await recordSale(medicine.id, 1);
+    const qty = quantity > 0 ? quantity : 1;
+    await recordSale(medicine.id, qty);
+    setLastSold(qty);
+    setQuantity(0);
     setToast(true);
-    setTimeout(() => setToast(false), 1500);
+    setTimeout(() => setToast(false), 300);
+  }
+
+  function handleIncrement(e: React.MouseEvent) {
+    e.stopPropagation();
+    setQuantity((prev) => prev + 1);
   }
 
   return (
@@ -33,11 +43,29 @@ export function MedicineTile({ medicine, gradient = 'from-[#14b8a6] to-[#2dd4bf]
         gradient,
       )}
     >
-      <div className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
-        <Plus className="h-5 w-5 text-white" />
-      </div>
+      <span
+        onClick={handleIncrement}
+        className={cn(
+          'absolute top-3 right-3 flex items-center justify-center transition-all cursor-pointer z-10',
+          quantity > 0
+            ? 'h-8 w-8 rounded-full bg-white/40 backdrop-blur-sm scale-110 font-bold'
+            : 'h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm group-hover:scale-110'
+        )}
+      >
+        {quantity > 0 ? (
+          <span className="text-base font-black text-white">{quantity}</span>
+        ) : (
+          <Plus className="h-5 w-5 text-white" />
+        )}
+      </span>
 
-      {(onEdit || onRemove) && (
+      {quantity > 0 && (
+        <div className="absolute top-3 left-3 h-7 px-2 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+          <span className="text-xs font-bold text-white">x{quantity}</span>
+        </div>
+      )}
+
+      {(onEdit || onRemove) && quantity === 0 && (
         <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <span
@@ -68,7 +96,9 @@ export function MedicineTile({ medicine, gradient = 'from-[#14b8a6] to-[#2dd4bf]
       {toast && (
         <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-[#0f172a] animate-in fade-in zoom-in duration-200 rounded-3xl">
           <CheckCircle2 className="h-8 w-8 text-[#22c55e] mb-1" />
-          <span className="font-bold text-sm">Sold!</span>
+          <span className="font-bold text-sm">
+            {lastSold > 1 ? `${lastSold}x Sold!` : 'Sold!'}
+          </span>
         </div>
       )}
     </button>

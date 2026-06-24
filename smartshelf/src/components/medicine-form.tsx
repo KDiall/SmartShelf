@@ -17,7 +17,15 @@ const medicineSchema = z.object({
   currentStock: z.coerce.number().min(0, 'Must be 0 or more'),
   reorderThreshold: z.coerce.number().min(1, 'Must be at least 1'),
   reorderQuantity: z.coerce.number().min(1, 'Must be at least 1'),
-  expiryDate: z.string().min(1, 'Expiry date is required'),
+  expiryDate: z.string().min(1, 'Expiry date is required').refine(
+    (val) => {
+      const expiry = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return expiry >= today;
+    },
+    { message: 'This medicine has expired. Please select a valid date.' }
+  ),
   costPerUnit: z.coerce.number().min(0, 'Must be 0 or more'),
   isBig5: z.boolean(),
 });
