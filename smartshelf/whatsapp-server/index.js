@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Client, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -8,7 +8,6 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const mongoose = require('mongoose');
 
 // Load environment variables
 require('dotenv').config();
@@ -67,7 +66,6 @@ async function gracefulShutdown() {
   for (const [chatbotId] of sessionHealthChecks) {
     stopHealthMonitoring(chatbotId);
   }
-  try { await mongoose.disconnect(); } catch (e) {}
   console.log('Shutdown complete');
 }
 
@@ -112,41 +110,6 @@ const clients = new Map();
 const sessionHealthChecks = new Map();
 const HEALTH_CHECK_INTERVAL = 30000;
 let initializing = false;
-
-// MongoDB session schema for RemoteAuth persistence
-const sessionSchema = new mongoose.Schema({
-  session: { type: String, required: true, unique: true },
-  data: { type: mongoose.Schema.Types.Mixed, required: true },
-}, { timestamps: true });
-const SessionModel = mongoose.model('Session', sessionSchema);
-
-const mongoStore = {
-  _sessionId(sessionInfo) {
-    return typeof sessionInfo === 'string' ? sessionInfo : sessionInfo.session;
-  },
-  async sessionExists(sessionInfo) {
-    const sessionId = this._sessionId(sessionInfo);
-    const count = await SessionModel.countDocuments({ session: sessionId });
-    return count > 0;
-  },
-  async getSession(sessionInfo) {
-    const sessionId = this._sessionId(sessionInfo);
-    const doc = await SessionModel.findOne({ session: sessionId }).lean();
-    return doc ? doc.data : null;
-  },
-  async setSession(sessionInfo, data) {
-    const sessionId = this._sessionId(sessionInfo);
-    await SessionModel.updateOne(
-      { session: sessionId },
-      { $set: { session: sessionId, data } },
-      { upsert: true }
-    );
-  },
-  async deleteSession(sessionInfo) {
-    const sessionId = this._sessionId(sessionInfo);
-    await SessionModel.deleteOne({ session: sessionId });
-  },
-};
 
 // Message queue helper functions
 async function sendMessageDirectly(client, phoneE164, message) {
@@ -272,12 +235,6 @@ function stopHealthMonitoring(chatbotId) {
 async function clearSession(chatbotId) {
   const safeId = sanitizeClientId(chatbotId || 'session');
   try {
-    // Clear from MongoDB RemoteAuth store
-    await mongoStore.deleteSession(safeId).catch(() => {});
-    console.log(`[clearSession] Cleared MongoDB session for ${safeId}`);
-  } catch (e) {}
-  try {
-    // Also clean up any local session files as fallback
     const sessionDir = path.join(SESSION_DIR, 'session');
     if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
     const sessionIdPath = path.join(SESSION_DIR, `session-${safeId}`);
@@ -313,11 +270,9 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
   if (!(await checkNetwork())) throw new Error('Network check failed');
 
   const client = new Client({
-    authStrategy: new RemoteAuth({
-      store: mongoStore,
+    authStrategy: new LocalAuth({
       clientId: safeClientId,
       dataPath: SESSION_DIR,
-      backupSyncIntervalMs: 300000,
     }),
     takeoverOnConflict: true,
     takeoverTimeoutMs: 30000,
@@ -377,15 +332,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
     console.log(`✅ Client ready for ${chatbotId}`);
     const phoneNumber = client.info?.wid?.user || 'unknown';
     startHealthMonitoring(chatbotId, client);
-    // Force-save session to MongoDB immediately so it survives container restarts
-    try {
-      if (client.authStrategy && typeof client.authStrategy.saveSession === 'function') {
-        await client.authStrategy.saveSession();
-        console.log(`✅ Session saved to MongoDB for ${safeClientId}`);
-      }
-    } catch (e) {
-      console.error('Failed to save session on ready:', e.message);
-    }
+    // Session is auto-saved to disk via LocalAuth — no MongoDB needed
     try {
       await axios.post(getAgentUrl(), { chatbotId, event: 'connected', phoneNumber }, {
         headers: { 'x-api-key': getAgentApiKey() }
@@ -435,10 +382,6 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
     } catch (error) {
       console.error('Error processing message:', error.message);
     }
-  });
-
-  client.on('remote_session_saved', () => {
-    console.log(`✅ Remote session backed up for ${safeClientId}`);
   });
 
   client.on('auth_failure', (msg) => {
@@ -597,36 +540,11 @@ app.get('/debug-env', (req, res) => {
   });
 });
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || '';
 
-async function connectMongo() {
-  if (!MONGODB_URI) {
-    console.log('⚠️  No MONGODB_URI set — RemoteAuth will not persist sessions across restarts.');
-    console.log('   Set MONGODB_URI in .env to enable persistent WhatsApp sessions.');
-    return false;
-  }
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
-    console.log('✅ Connected to MongoDB for session persistence');
-    return true;
-  } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
-    console.log('   WhatsApp session will NOT persist across restarts.');
-    return false;
-  }
-}
-
-const PORT = process.env.PORT || 3700;
 server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
-  console.log('💡 To reduce memory, set Render env: NODE_OPTIONS=--max_old_space_size=256');
-
-  // Connect to MongoDB first, then initialize WhatsApp
-  await connectMongo();
+  console.log('💡 LocalAuth session stored at', SESSION_DIR);
 
   // Initialize WhatsApp after a short delay so Render's health check
   // succeeds immediately and the container is fully ready.

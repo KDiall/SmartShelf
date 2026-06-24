@@ -39,7 +39,13 @@ export async function POST(request: Request) {
   const supplierPhone =
     process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23231569311';
 
-  const result = await sendOrderMessage(supplierPhone, items);
+  let pharmacyName = '';
+  if (pharmacyId) {
+    const ph = await prisma.pharmacy.findUnique({ where: { id: pharmacyId }, select: { name: true } });
+    pharmacyName = ph?.name ?? '';
+  }
+
+  const result = await sendOrderMessage(supplierPhone, items, pharmacyName);
 
   return NextResponse.json({
     message: result.sent
