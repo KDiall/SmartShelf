@@ -46,7 +46,7 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV SESSION_DIR=/data/.wwebjs_auth
 ENV SKIP_NETWORK_CHECK=true
-ENV NODE_OPTIONS=--max-old-space-size=256
+ENV NODE_OPTIONS="--max-old-space-size=256 --expose-gc"
 
 COPY package*.json ./
 RUN npm install
