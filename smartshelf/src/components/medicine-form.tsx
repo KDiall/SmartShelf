@@ -57,9 +57,9 @@ export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', bi
       unit: defaultValues?.unit || 'packs',
       currentStock: defaultValues?.currentStock || 0,
       reorderThreshold: defaultValues?.reorderThreshold || 10,
-      reorderQuantity: defaultValues?.reorderQuantity || 50,
+      reorderQuantity: defaultValues?.reorderQuantity ?? 50,
       expiryDate: defaultValues?.expiryDate || '',
-      costPerUnit: defaultValues?.costPerUnit || 0,
+      costPerUnit: defaultValues?.costPerUnit ?? 0,
       isBig5: defaultValues?.isBig5 || false,
     },
   });
@@ -184,6 +184,8 @@ export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', bi
           <Input
             id="reorderQuantity"
             type="number"
+            placeholder="50"
+            onFocus={(e) => e.target.select()}
             {...register('reorderQuantity')}
             className="rounded-xl"
           />
@@ -197,8 +199,11 @@ export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', bi
             id="costPerUnit"
             type="number"
             step="0.01"
+            placeholder="0.00"
+            disabled={!!defaultValues?.id}
+            onFocus={(e) => e.target.select()}
             {...register('costPerUnit')}
-            className="rounded-xl"
+            className="rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
           />
           {errors.costPerUnit && (
             <p className="text-sm text-red-500">{errors.costPerUnit.message}</p>
