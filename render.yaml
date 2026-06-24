@@ -8,9 +8,9 @@ services:
     # Paths are relative to the repository root (this file's location).
     dockerfilePath: ./smartshelf/whatsapp-server/Dockerfile
     dockerContext: ./smartshelf/whatsapp-server
-    # 'starter' keeps the service awake (required: WhatsApp sessions drop when a
-    # free instance sleeps, and persistent disks need a paid plan).
-    plan: starter
+    # 'professional' gives 1GB RAM — enough for Puppeteer + Node to run indefinitely
+    # without OOM restarts during demo reviews.
+    plan: professional
     region: oregon
     # Unauthenticated endpoint used for Render health checks.
     healthCheckPath: /api/brand
