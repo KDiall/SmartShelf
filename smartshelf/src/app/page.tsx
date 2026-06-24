@@ -277,6 +277,15 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => router.push('/stock')}
+                  className="h-7 rounded-xl border-primary/20 text-primary font-bold text-[10px] uppercase tracking-widest gap-1 shadow-sm"
+                >
+                  <Pill className="h-3 w-3" />
+                  Others
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => router.push('/bulk-sale')}
                   className="h-7 rounded-xl border-primary/20 text-primary font-bold text-[10px] uppercase tracking-widest gap-1 shadow-sm"
                 >

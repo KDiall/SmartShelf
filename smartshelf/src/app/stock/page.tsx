@@ -5,7 +5,7 @@ import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { getStockStatus } from '@/lib/risk-engine';
-import { Search, Plus, Loader2, Filter } from 'lucide-react';
+import { Search, Plus, Loader2, Filter, CheckCircle2 } from 'lucide-react';
 import { MedicineForm } from '@/components/medicine-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,11 +26,12 @@ function StockBadge({ status }: { status: string }) {
 }
 
 export default function StockPage() {
-  const { medicines, isLoaded, loadData, addMedicine } = usePharmacyStore();
+  const { medicines, isLoaded, loadData, addMedicine, recordSale } = usePharmacyStore();
   const token = useAuthStore((s) => s.token);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showModal, setShowModal] = useState(false);
+  const [soldId, setSoldId] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) loadData();
@@ -155,10 +156,33 @@ export default function StockPage() {
                           <h3 className="text-xl font-semibold text-foreground">{med.name}</h3>
                           <StockBadge status={status} />
                         </div>
-                        <span className="text-lg font-bold text-primary">
-                          {med.currentStock}{' '}
-                          <span className="text-sm font-medium text-muted-foreground">{med.unit}</span>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              recordSale(med.id, 1);
+                              setSoldId(med.id);
+                              setTimeout(() => setSoldId(null), 300);
+                            }}
+                            className={cn(
+                              'h-7 w-7 rounded-full flex items-center justify-center transition-all',
+                              soldId === med.id
+                                ? 'bg-[#22c55e] text-white scale-110'
+                                : 'bg-primary/10 text-primary hover:bg-primary/20 active:scale-90'
+                            )}
+                          >
+                            {soldId === med.id ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
+                          </button>
+                          <span className="text-lg font-bold text-primary">
+                            {med.currentStock}{' '}
+                            <span className="text-sm font-medium text-muted-foreground">{med.unit}</span>
+                          </span>
+                        </div>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
