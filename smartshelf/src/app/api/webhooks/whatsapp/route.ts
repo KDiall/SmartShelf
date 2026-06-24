@@ -89,6 +89,18 @@ export async function POST(request: Request) {
   }
 
   if (!senderFound) {
+    // Allow super admin via env var even if not in DB
+    const superAdminPhone = normalizePhone(
+      process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || ''
+    );
+    if (senderPhone && superAdminPhone && senderPhone === superAdminPhone) {
+      pharmacyId = undefined;
+      senderFound = true;
+      console.log('Super admin identified via env var fallback');
+    }
+  }
+
+  if (!senderFound) {
     console.log(`Rejecting unknown sender: ${senderPhone}`);
     return NextResponse.json({
       answer: 'You are not registered with any pharmacy. Contact your pharmacy admin to create your account.',
