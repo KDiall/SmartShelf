@@ -41,7 +41,7 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearm
 WORKDIR /app
 
 # Cache-bust: increment this to force a full rebuild (Docker layer cache)
-ARG CACHEBUST=2
+ARG CACHEBUST=3
 
 # Prevent puppeteer from downloading its own Chrome during npm install.
 # We already installed the system Chrome above.
@@ -59,10 +59,7 @@ RUN echo "build ${CACHEBUST}"
 
 COPY . .
 
-# Create session directory on the persistent disk Render mounts at /data
-RUN mkdir -p /data/.wwebjs_auth && chmod -R 777 /data
-
 # Render expects services to listen on port 10000 by default
 EXPOSE 10000
 
-CMD mkdir -p /data/.wwebjs_auth && node index.js
+CMD ["node", "index.js"]
