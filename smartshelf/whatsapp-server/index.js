@@ -359,7 +359,7 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
         '--disable-2d-canvas-clip-aa',
         '--disable-reading-from-canvas',
         '--deterministic-fetch',
-        '--max_old_space_size=256',
+        '--max_old_space_size=128',
       ],
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
     },
