@@ -111,6 +111,16 @@ export async function POST(request: Request) {
   }
 
   if (!senderFound) {
+    // Fallback: match by known WhatsApp LID (privacy JID) for the super admin
+    const superAdminLid = (process.env.SUPER_ADMIN_WHATSAPP_LID || '259554117988511').trim();
+    if (superAdminLid && from && from.startsWith(superAdminLid)) {
+      pharmacyId = undefined;
+      senderFound = true;
+      console.log('Super admin identified via LID fallback');
+    }
+  }
+
+  if (!senderFound) {
     console.log(`Rejecting unknown sender: ${senderPhone}`);
     return NextResponse.json({
       answer: 'You are not registered with any pharmacy. Contact your pharmacy admin to create your account.',
