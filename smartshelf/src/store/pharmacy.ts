@@ -163,10 +163,14 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
   },
 
   updateMedicine: async (medicine: Medicine) => {
-    await idb.medicines.put(medicine);
+    const updated = { ...medicine };
+    if (updated.isBig5 && updated.currentStock <= 0) {
+      updated.isBig5 = false;
+    }
+    await idb.medicines.put(updated);
     const token = getToken();
     if (token && navigator.onLine) {
-      await syncMedicinesToServer([medicine], token);
+      await syncMedicinesToServer([updated], token);
     }
     await get().loadData();
   },
