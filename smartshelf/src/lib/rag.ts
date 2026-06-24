@@ -21,6 +21,7 @@ export async function generateResponse(message: string, pharmacyId?: string): Pr
         reorderQuantity: true,
         expiryDate: true,
         costPerUnit: true,
+        ...(!pharmacyId ? { pharmacy: { select: { name: true } } } : {}),
       },
     });
 
@@ -50,10 +51,25 @@ export async function generateResponse(message: string, pharmacyId?: string): Pr
 
     const inventoryTable = medicines
       .map(
-        (m) =>
-          `- ${m.name}: ${m.currentStock} ${m.unit} (threshold: ${m.reorderThreshold}, reorder qty: ${m.reorderQuantity}, expires: ${m.expiryDate}, cost: Le ${m.costPerUnit})`
+        (m: any) =>
+          `${m.pharmacy ? `[${m.pharmacy.name}] ` : ''}- ${m.name}: ${m.currentStock} ${m.unit} (threshold: ${m.reorderThreshold}, reorder qty: ${m.reorderQuantity}, expires: ${m.expiryDate}, cost: Le ${m.costPerUnit})`
       )
       .join('\n');
+
+    // 3. Platform Overview (for super admin — no pharmacy scoping)
+    let platformOverview = '';
+    if (!pharmacyId) {
+      const totalUsers = await prisma.user.count();
+      const totalPharmacies = await prisma.pharmacy.count();
+      const platformMeds = await prisma.medicine.count();
+      platformOverview = `
+---
+PLATFORM OVERVIEW:
+- Total users: ${totalUsers}
+- Total pharmacies: ${totalPharmacies}
+- Total medicines across all pharmacies: ${platformMeds}
+---`;
+    }
 
     const systemPrompt = `You are SmartShelf Assistant, a medical and inventory chatbot for pharmacies in Sierra Leone. Your primary goal is to help staff manage inventory and provide GROUNDED treatment advice based on official guidelines.
 
@@ -71,7 +87,7 @@ INVENTORY CONTEXT:
 
 Full inventory:
 ${inventoryTable}
----
+---${platformOverview}
 
 Instructions:
 1. INVENTORY: Answer questions about stock levels, expiry dates, and restock needs using the INVENTORY CONTEXT.
@@ -80,7 +96,8 @@ Instructions:
    - If the STG CONTEXT is missing or irrelevant for a medical query, say: "I couldn't find official guidance for this in the Standard Treatment Guidelines. Please consult a senior pharmacist."
    - ALWAYS remind them that this is for guidance only and doesn't replace professional judgment.
 3. STYLE: Keep answers concise, professional, and friendly. Use emojis sparingly. Format medicine names in *bold*.
-4. CURRENCY: Prices are in Sierra Leonean Leones (Le).`;
+4. CURRENCY: Prices are in Sierra Leonean Leones (Le).
+5. PLATFORM OVERVIEW: If the PLATFORM OVERVIEW section is present, answer questions about total users, pharmacies, and platform stats using that data. If asked for a pharmacy-specific question but no pharmacy is scoped, explain that they can see all pharmacies' data but specify the pharmacy name when discussing specific stock.`;
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
