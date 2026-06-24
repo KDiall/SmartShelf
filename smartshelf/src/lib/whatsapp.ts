@@ -125,10 +125,12 @@ export async function sendOtpMessage(phone: string, otp: string): Promise<WhatsA
 
 export async function sendOrderMessage(
   supplierPhone: string,
-  items: { name: string; quantity: number; unit: string }[]
+  items: { name: string; quantity: number; unit: string }[],
+  pharmacyName?: string
 ): Promise<WhatsAppResponse> {
+  const header = pharmacyName ? `🏥 Pharmacy: ${pharmacyName}\n\n` : '';
   const lines = items.map((i) => `- ${i.name} x${i.quantity} ${i.unit}`);
-  const text = `*SmartShelf Restock Order*\n\n${lines.join('\n')}\n\nPlease confirm availability.`;
+  const text = `*SmartShelf Restock Order*\n\n${header}${lines.join('\n')}\n\nPlease confirm availability.`;
   return sendTextMessage(supplierPhone, text);
 }
 
