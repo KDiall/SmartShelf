@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { normalizePhone } from '@/lib/phone';
 
-function fixedOtp(): string {
-  return process.env.FIXED_OTP || '123456';
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get('role');
@@ -95,14 +91,9 @@ export async function POST(request: Request) {
     },
   });
 
-  const otp = fixedOtp();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-  await prisma.otp.create({
-    data: { phone, code: otp, expiresAt },
-  });
-
-  console.log(`[NEW USER] Created ${phone} with fixed OTP: ${otp}`);
+  // No OTP is sent at creation. The user's number is saved now and verified
+  // later: when they log in, /api/auth/send-otp delivers a fresh OTP via WhatsApp.
+  console.log(`[NEW USER] Created ${phone} (${userRole})`);
 
   return NextResponse.json({
     user: {
@@ -114,7 +105,6 @@ export async function POST(request: Request) {
       createdAt: user.createdAt.toISOString(),
       pharmacyId: user.pharmacyId,
     },
-    otpSent: true,
   }, { status: 201 });
 }
 

@@ -4,19 +4,9 @@ import { sendOtpMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
 import crypto from 'crypto';
 
-const DEMO_PHONES = new Set(['23231569311', '23278077127', '23299064007', '23288538947', '23232966674']);
-
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === 'true';
-}
-
-function isDemoPhone(phone: string): boolean {
-  return DEMO_PHONES.has(phone) || isDemoMode();
-}
-
-function fixedOtp(): string {
-  return process.env.FIXED_OTP || '123456';
-}
+// Minimum time between OTP sends to the same number. Throttling outbound
+// messages reduces the burst pattern that triggers WhatsApp restrictions.
+const RESEND_COOLDOWN_SECONDS = 45;
 
 function randomOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
@@ -31,35 +21,26 @@ export async function POST(request: Request) {
 
   phone = normalizePhone(phone);
 
-  // DEMO MODE: auto-create user if not found, use fixed OTP, skip WhatsApp
-  if (isDemoPhone(phone)) {
-    let user = await prisma.user.findUnique({ where: { phone } });
-    if (!user) {
-      const pharmacy = await prisma.pharmacy.findFirst();
-      if (!pharmacy) {
-        return NextResponse.json({ error: 'No pharmacy configured. Run seed first.' }, { status: 500 });
-      }
-      user = await prisma.user.create({
-        data: { phone, name: `User ${phone}`, role: 'pharmacist', verified: false, pharmacyId: pharmacy.id },
-      });
-      console.log(`[DEMO] Auto-created user ${phone}`);
-    }
-
-    const otp = fixedOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    await prisma.otp.create({
-      data: { phone, code: otp, expiresAt },
-    });
-
-    console.log(`[DEMO OTP] For ${phone}: ${otp}`);
-    return NextResponse.json({ message: 'OTP sent (demo mode)' });
-  }
-
-  // NORMAL MODE: look up user, send via WhatsApp
+  // The user must already exist (created by a super admin / pharmacy admin).
   const user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {
     return NextResponse.json({ error: 'User not found. Contact your pharmacy admin to create your account.' }, { status: 404 });
+  }
+
+  // Rate limit: block rapid repeat sends to the same number.
+  const lastOtp = await prisma.otp.findFirst({
+    where: { phone },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (lastOtp) {
+    const elapsed = (Date.now() - lastOtp.createdAt.getTime()) / 1000;
+    if (elapsed < RESEND_COOLDOWN_SECONDS) {
+      const wait = Math.ceil(RESEND_COOLDOWN_SECONDS - elapsed);
+      return NextResponse.json(
+        { error: `Please wait ${wait}s before requesting another code.` },
+        { status: 429 }
+      );
+    }
   }
 
   const otp = randomOtp();

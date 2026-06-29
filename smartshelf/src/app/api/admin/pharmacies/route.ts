@@ -1,22 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendAccountCreatedMessage } from '@/lib/whatsapp';
 import { normalizePhone } from '@/lib/phone';
-import crypto from 'crypto';
-
-const DEMO_PHONES = new Set(['7000', '7001', '7002', '7003', '7004']);
-
-function isDemoPhone(phone: string): boolean {
-  return DEMO_PHONES.has(phone);
-}
-
-function fixedOtp(): string {
-  return process.env.FIXED_OTP || '123456';
-}
-
-function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
-}
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
@@ -67,7 +51,7 @@ export async function POST(request: Request) {
     data: { name, address: null, phone },
   });
 
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       phone,
       name: adminName || null,
@@ -78,27 +62,12 @@ export async function POST(request: Request) {
     },
   });
 
-  // Send the admin their first login OTP.
-  const otp = isDemoPhone(phone) ? fixedOtp() : generateOtp();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-  await prisma.otp.create({ data: { phone, code: otp, expiresAt } });
-
-  let otpSent = false;
-  if (isDemoPhone(phone)) {
-    console.log(`[DEMO OTP] For pharmacy admin ${phone}: ${otp}`);
-    otpSent = true;
-  } else {
-    const result = await sendAccountCreatedMessage(phone, admin.name, otp);
-    if (!result.sent) {
-      console.error(`[WHATSAPP FAIL] Pharmacy admin OTP for ${phone}: ${otp} | Error: ${result.error}`);
-    } else {
-      console.log(`[OTP] For pharmacy admin ${phone}: ${otp}`);
-      otpSent = true;
-    }
-  }
+  // No OTP is sent here. The admin's number is saved now and verified later:
+  // when the admin logs in, /api/auth/send-otp delivers a fresh OTP via WhatsApp.
+  console.log(`[PHARMACY] Created "${name}" with admin ${phone}`);
 
   return NextResponse.json(
-    { ...pharmacy, adminPhone: phone, otpSent, whatsappError: otpSent ? null : 'WhatsApp unavailable' },
+    { ...pharmacy, adminPhone: phone },
     { status: 201 }
   );
 }

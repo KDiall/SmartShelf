@@ -17,6 +17,9 @@ function VerifyForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendIn, setResendIn] = useState(45);
+  const [resendMsg, setResendMsg] = useState('');
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const submitTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -25,6 +28,35 @@ function VerifyForm() {
     const t = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(t);
   }, []);
+
+  // Cooldown countdown for the resend button.
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  async function handleResend() {
+    if (resending || resendIn > 0) return;
+    setResending(true);
+    setResendMsg('');
+    setError('');
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: normalizePhone(phone) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
+      setResendMsg('A new code was sent via WhatsApp.');
+      setResendIn(45);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend OTP');
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     if (!phone) {
@@ -140,6 +172,25 @@ function VerifyForm() {
                   'Verify'
                 )}
               </Button>
+
+              {resendMsg && (
+                <p className="text-sm text-emerald-600 font-medium text-center">{resendMsg}</p>
+              )}
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending || resendIn > 0}
+                  className="text-sm font-semibold text-primary disabled:text-[#94a3b8] disabled:cursor-not-allowed"
+                >
+                  {resending
+                    ? 'Sending...'
+                    : resendIn > 0
+                      ? `Resend code in ${resendIn}s`
+                      : 'Resend code'}
+                </button>
+              </div>
             </form>
           </CardContent>
         </Card>

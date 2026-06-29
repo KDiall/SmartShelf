@@ -42,7 +42,6 @@ export default function AdminPharmaciesPage() {
   const [newPhone, setNewPhone] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [otpWarning, setOtpWarning] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -70,7 +69,6 @@ export default function AdminPharmaciesPage() {
     if (!token) return;
     setCreating(true);
     setCreateError('');
-    setOtpWarning('');
     try {
       const res = await fetch('/api/admin/pharmacies', {
         method: 'POST',
@@ -86,14 +84,7 @@ export default function AdminPharmaciesPage() {
       setNewName('');
       setNewAdminName('');
       setNewPhone('');
-      if (created.otpSent === false) {
-        // Pharmacy + admin were created, but the login OTP could not be delivered.
-        setOtpWarning(
-          `Pharmacy created, but the login OTP could not be sent to ${created.adminPhone || 'the admin'}: ${created.whatsappError || 'WhatsApp unavailable'}. The admin can request a new OTP from the login page once WhatsApp is reachable.`
-        );
-      } else {
-        setShowAddModal(false);
-      }
+      setShowAddModal(false);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create pharmacy');
     } finally {
@@ -259,20 +250,15 @@ export default function AdminPharmaciesPage() {
               <div className="space-y-2">
                 <Label htmlFor="phone">Admin WhatsApp Number *</Label>
                 <Input id="phone" type="tel" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required className="rounded-[14px]" />
-                <p className="text-xs text-muted-foreground">The admin will log in with this number and receive their OTP here.</p>
+                <p className="text-xs text-muted-foreground">The admin logs in with this number. An OTP is sent to it when they sign in.</p>
               </div>
               {createError && (
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
                   <p className="text-sm text-red-700 font-medium">{createError}</p>
                 </div>
               )}
-              {otpWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
-                  <p className="text-sm text-amber-800 font-medium">{otpWarning}</p>
-                </div>
-              )}
               <Button type="submit" disabled={creating || !newName || !newPhone} className="w-full h-12 rounded-2xl font-bold text-base shadow-lg shadow-primary/20">
-                {creating ? 'Creating...' : otpWarning ? 'Create Another' : 'Create Pharmacy'}
+                {creating ? 'Creating...' : 'Create Pharmacy'}
               </Button>
             </form>
           </DialogContent>
