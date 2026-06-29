@@ -81,13 +81,21 @@ export async function POST(request: Request) {
     }
 
     // 3. Fallback: try matching last digits (handles demo short codes like 7000
-    //    when the user texts from a real number like +23276000000)
-    if (!sender && senderPhone) {
+    //    when the user texts from a real number like +23276000000, and LID JIDs
+    //    where getContact() resolved the real phone in phoneE164)
+    if (!sender) {
       const rawDigits = from.split('@')[0].replace(/\D/g, '');
       const users = await prisma.user.findMany({
         select: { phone: true, pharmacyId: true, role: true },
       });
-      sender = users.find((u) => rawDigits.endsWith(u.phone.replace(/\D/g, ''))) ?? null;
+      // Try matching by JID digits first, then by phoneE164 digits
+      const byJid = users.find((u) => rawDigits.endsWith(u.phone.replace(/\D/g, '')));
+      if (byJid) {
+        sender = byJid;
+      } else if (payloadPhone) {
+        const payloadDigits = payloadPhone.replace(/\D/g, '');
+        sender = users.find((u) => payloadDigits.endsWith(u.phone.replace(/\D/g, ''))) ?? null;
+      }
     }
 
     senderFound = !!sender;

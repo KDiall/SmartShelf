@@ -363,8 +363,27 @@ async function initializeClient(retryCount = 0, maxRetries = 3) {
       }
 
       // Resolve sender's actual phone number via contact (handles LID JIDs)
+      let contactNumber = '';
+      // Method 1: getContact() — most reliable for known contacts
       const contact = await message.getContact().catch(() => null);
-      const contactNumber = contact?.number || '';
+      if (contact?.number) {
+        contactNumber = contact.number;
+      }
+      // Method 2: getContactById() — works for some LIDs getContact() can't resolve
+      if (!contactNumber) {
+        try {
+          const byId = await client.getContactById(message.from).catch(() => null);
+          if (byId?.number) contactNumber = byId.number;
+        } catch (e) {}
+      }
+      // Method 3: raw _data as last resort (sender.id often has the real number)
+      if (!contactNumber) {
+        try {
+          const raw = message._data;
+          const rawNum = raw?.sender?.id?.split('@')[0] || raw?.participant?.split('@')[0] || '';
+          if (rawNum) contactNumber = rawNum;
+        } catch (e) {}
+      }
       const jidLocal = message.from.split('@')[0];
       const webhookPayload = {
         chatbotId,
@@ -552,6 +571,7 @@ app.get('/debug-env', (req, res) => {
 });
 
 
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Connect UI: http://localhost:${PORT}/connect/${getChatbotId()}`);
