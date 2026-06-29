@@ -190,20 +190,6 @@ npm run prisma:seed
 npm run prisma:studio
 ```
 
-### Demo Access
-
-After seeding, the following accounts are available for local development:
-
-| Phone | Role | OTP |
-|-------|------|-----|
-| `7000` | Super Admin | `123456` |
-| `7001` | Pharmacy Admin (unassigned) | `123456` |
-| `7002` | Pharmacist (unassigned) | `123456` |
-| `7003` | Pharmacy Admin (unassigned) | `123456` |
-| `7004` | Pharmacist (unassigned) | `123456` |
-
-Phones `7001`–`7004` are free for assignment via the Manage Users or Create Pharmacy flows. All demo phones bypass WhatsApp and use the fixed OTP `123456`.
-
 ## Running Locally
 
 1. Start the main application:
