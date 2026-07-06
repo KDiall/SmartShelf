@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return true;
   });
 
-  const isAuthPage = pathname === '/login' || pathname === '/verify';
+  const isAuthPage = pathname === '/login' || pathname === '/change-password';
 
   if (isAuthPage) {
     return <>{children}</>;

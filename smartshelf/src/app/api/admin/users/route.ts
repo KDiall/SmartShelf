@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { normalizePhone } from '@/lib/phone';
+import { generateTemporaryPassword, hashPassword } from '@/lib/password';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
   if (currentRole === 'super_admin') {
     pharmacyId = bodyPharmacyId || null;
     // Every staff member (admin or pharmacist) must belong to a pharmacy,
-    // otherwise they can never log in (verify-otp blocks pharmacy-less staff).
+    // otherwise they can never log in (login blocks pharmacy-less staff).
     if (!pharmacyId) {
       return NextResponse.json({ error: 'A pharmacy must be selected for this user' }, { status: 400 });
     }
@@ -80,6 +82,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Selected pharmacy does not exist' }, { status: 400 });
   }
 
+  const tempPassword = generateTemporaryPassword();
+  const passwordHash = await hashPassword(tempPassword);
+
   const user = await prisma.user.create({
     data: {
       phone,
@@ -87,12 +92,20 @@ export async function POST(request: Request) {
       role: userRole,
       verified: false,
       createdBy: currentUserId,
+      createdById: currentUserId,
       pharmacyId: pharmacyId,
+      passwordHash,
+      mustChangePassword: true,
+      failedLoginAttempts: 0,
     },
   });
 
-  // No OTP is sent at creation. The user's number is saved now and verified
-  // later: when they log in, /api/auth/send-otp delivers a fresh OTP via WhatsApp.
+  await logAudit('user_created', {
+    userId: currentUserId,
+    targetUserId: user.id,
+    pharmacyId: user.pharmacyId,
+  });
+
   console.log(`[NEW USER] Created ${phone} (${userRole})`);
 
   return NextResponse.json({
@@ -105,6 +118,7 @@ export async function POST(request: Request) {
       createdAt: user.createdAt.toISOString(),
       pharmacyId: user.pharmacyId,
     },
+    temporaryPassword: tempPassword,
   }, { status: 201 });
 }
 

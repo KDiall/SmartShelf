@@ -1,14 +1,18 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/lib/password';
 
 const prisma = new PrismaClient();
 
-// Phones are stored as digits only so OTP send/verify lookups always match.
+const DEFAULT_SEED_PASSWORD = 'Demo1234';
+
+// Phones are stored as digits only so login lookups always match.
 function normalizePhone(phone: string): string {
   return phone.replace(/[^0-9]/g, '');
 }
 
 async function seed() {
   console.log('Starting database seed...');
+  const passwordHash = await hashPassword(DEFAULT_SEED_PASSWORD);
 
   // 1. Platform owner (super admin) - NOT tied to any pharmacy.
   const superAdminPhone = normalizePhone('+23231569311');
@@ -21,13 +25,15 @@ async function seed() {
         role: 'super_admin',
         verified: true,
         pharmacyId: null,
+        passwordHash,
+        mustChangePassword: false,
       },
     });
     console.log('Seeded platform-only super admin');
   } else {
     superAdmin = await prisma.user.update({
       where: { id: superAdmin.id },
-      data: { role: 'super_admin', pharmacyId: null },
+      data: { role: 'super_admin', pharmacyId: null, passwordHash, mustChangePassword: false },
     });
     console.log('Updated existing user to platform-only super admin');
   }
@@ -57,13 +63,16 @@ async function seed() {
         verified: true,
         pharmacyId: pharmacy.id,
         createdBy: superAdmin.id,
+        createdById: superAdmin.id,
+        passwordHash,
+        mustChangePassword: false,
       },
     });
     console.log('Seeded demo pharmacy admin');
   } else {
     admin = await prisma.user.update({
       where: { id: admin.id },
-      data: { role: 'admin', pharmacyId: pharmacy.id },
+      data: { role: 'admin', pharmacyId: pharmacy.id, passwordHash, mustChangePassword: false },
     });
     console.log('Updated existing demo pharmacy admin');
   }
@@ -198,6 +207,7 @@ async function seed() {
   console.log('Seeded sample sales for dashboard visualization');
   
   console.log('Seeding completed successfully.');
+  console.log(`Default seed password: ${DEFAULT_SEED_PASSWORD}`);
 }
 
 seed()

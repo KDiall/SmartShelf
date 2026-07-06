@@ -8,22 +8,30 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(uuid())
-  phone      String    @unique
-  name       String?
-  address    String?
-  location   String?
-  avatar     String?
-  role       String    @default("pharmacist") // super_admin, admin, pharmacist
-  verified   Boolean   @default(false)
-  createdBy  String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  pharmacyId String?
-  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
-  medicines  Medicine[]
-  sales      Sale[]
-  guidelines Guideline[]
+  id                  String    @id @default(uuid())
+  phone               String    @unique
+  name                String?
+  address             String?
+  location            String?
+  avatar              String?
+  role                String    @default("pharmacist") // super_admin, admin, pharmacist
+  verified            Boolean   @default(false)
+  passwordHash        String?
+  mustChangePassword  Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  createdBy           String?
+  createdById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  pharmacyId          String?
+  pharmacy            Pharmacy? @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  medicines           Medicine[]
+  sales               Sale[]
+  guidelines          Guideline[]
+  auditLogs           AuditLog[]
 }
 
 model Pharmacy {
@@ -49,13 +57,15 @@ model Guideline {
   updatedAt DateTime @updatedAt
 }
 
-model Otp {
-  id        String   @id @default(uuid())
-  phone     String
-  code      String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  userId      String?
+  targetUserId String?
+  pharmacyId  String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Medicine {

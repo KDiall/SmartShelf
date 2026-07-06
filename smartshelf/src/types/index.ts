@@ -64,6 +64,7 @@ export interface User {
   avatar: string | null;
   role: string;
   verified: boolean;
+  mustChangePassword?: boolean;
   pharmacyId?: string;
   createdAt: string;
 }

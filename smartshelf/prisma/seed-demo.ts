@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/lib/password';
 
 const prisma = new PrismaClient();
 
@@ -7,7 +8,9 @@ const PHARMACY_1_ADMIN = '23278077127';
 const PHARMACY_1_PHARMACIST = '23276567069';
 
 async function seedDemo() {
-  console.log('Seeding demo — clearing old data, creating 2 pharmacies with 5 users...');
+  console.log('Seeding demo — clearing old data, creating 1 pharmacy with 3 users...');
+
+  const demoPasswordHash = await hashPassword('Demo1234');
 
   // Delete old demo users so they can be re-created with the correct pharmacy
   const oldPhones = ['7000', '7001', '7002', '7003', '7004',
@@ -33,6 +36,8 @@ async function seedDemo() {
       role: 'super_admin',
       verified: true,
       pharmacyId: null,
+      passwordHash: demoPasswordHash,
+      mustChangePassword: false,
     },
   });
   console.log(`  Created super admin ${SUPER_ADMIN_PHONE}`);
@@ -50,6 +55,8 @@ async function seedDemo() {
       role: 'admin',
       verified: true,
       pharmacyId: ph1.id,
+      passwordHash: demoPasswordHash,
+      mustChangePassword: false,
     },
   });
   console.log(`  Created Pharmacy 1 admin ${PHARMACY_1_ADMIN}`);
@@ -61,6 +68,8 @@ async function seedDemo() {
       role: 'pharmacist',
       verified: true,
       pharmacyId: ph1.id,
+      passwordHash: demoPasswordHash,
+      mustChangePassword: false,
     },
   });
   console.log(`  Created Pharmacy 1 pharmacist ${PHARMACY_1_PHARMACIST}`);
@@ -71,7 +80,7 @@ async function seedDemo() {
   console.log(`  Pharmacy Admin: +23278077127`);
   console.log(`  Pharmacist:   +23276567069`);
   console.log('');
-  console.log('All numbers log in with OTP 123456');
+  console.log('All numbers log in with password: Demo1234');
 }
 
 seedDemo()

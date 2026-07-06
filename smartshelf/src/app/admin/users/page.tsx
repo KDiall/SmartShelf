@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, ShieldCheck, User, Store, Users as UsersIcon } from 'lucide-react';
+import { Plus, Trash2, ShieldCheck, User, Store, Users as UsersIcon, Key, Copy, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,12 @@ export default function AdminUsersPage() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [newTempPassword, setNewTempPassword] = useState<string | null>(null);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetTempPassword, setResetTempPassword] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   async function loadUsers() {
     if (!token) return;
@@ -95,7 +101,7 @@ export default function AdminUsersPage() {
       });
 
       const text = await res.text();
-      let data: { error?: string; user?: AdminUser } = {};
+      let data: { error?: string; user?: AdminUser; temporaryPassword?: string } = {};
       try {
         data = JSON.parse(text);
       } catch {
@@ -110,10 +116,37 @@ export default function AdminUsersPage() {
       setNewPhone('');
       setNewRole('pharmacist');
       setNewPharmacyId('');
+      if (data.temporaryPassword) {
+        setNewTempPassword(data.temporaryPassword);
+      }
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!token || !resetUserId) return;
+    setResetLoading(true);
+    setResetError('');
+    setResetTempPassword(null);
+    try {
+      const res = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: resetUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+      setResetTempPassword(data.temporaryPassword || null);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -215,16 +248,29 @@ export default function AdminUsersPage() {
                       <p className="text-sm text-[#64748b] mt-0.5">{u.phone}</p>
                     </div>
                   </div>
-                  {currentUser?.id !== u.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteId(u.id)}
-                      className="h-9 w-9 rounded-xl text-destructive hover:bg-destructive/10 shrink-0 ml-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    {currentUser?.id !== u.id && u.role !== 'super_admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { setResetUserId(u.id); setResetTempPassword(null); setResetError(''); }}
+                        title="Reset password"
+                        className="h-9 w-9 rounded-xl text-primary hover:bg-primary/10"
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {currentUser?.id !== u.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteId(u.id)}
+                        className="h-9 w-9 rounded-xl text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -256,7 +302,7 @@ export default function AdminUsersPage() {
           <DialogContent className="sm:max-w-md rounded-3xl">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>Create a new staff account. OTP will be sent to their WhatsApp.</DialogDescription>
+              <DialogDescription>Create a new staff account. A temporary password will be shown once.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
@@ -328,9 +374,103 @@ export default function AdminUsersPage() {
                 disabled={creating || !newPhone || (currentUser?.role === 'super_admin' && !newPharmacyId)}
                 className="w-full h-12 rounded-2xl font-bold text-base shadow-lg shadow-primary/20"
               >
-                {creating ? 'Creating...' : 'Create User & Send OTP'}
+                {creating ? 'Creating...' : 'Create User'}
               </Button>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* New user temporary password modal */}
+        <Dialog open={!!newTempPassword} onOpenChange={() => setNewTempPassword(null)}>
+          <DialogContent className="sm:max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Temporary Password</DialogTitle>
+              <DialogDescription>
+                Share this password with the user securely. It will not be shown again.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <code className="flex-1 text-lg font-bold text-[#0f172a] tracking-wide">{newTempPassword}</code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newTempPassword) {
+                      navigator.clipboard.writeText(newTempPassword);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    }
+                  }}
+                  className="rounded-xl gap-1"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <Button onClick={() => setNewTempPassword(null)} className="w-full rounded-2xl">Done</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset password modal */}
+        <Dialog open={!!resetUserId} onOpenChange={() => { setResetUserId(null); setResetTempPassword(null); setResetError(''); }}>
+          <DialogContent className="sm:max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Reset Password?</DialogTitle>
+              <DialogDescription>
+                This generates a new temporary password and forces the user to change it on next login.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {!resetTempPassword ? (
+                <>
+                  {resetError && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
+                      <p className="text-sm text-red-700 font-medium">{resetError}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => { setResetUserId(null); setResetError(''); }}
+                      className="flex-1 rounded-2xl"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleResetPassword}
+                      disabled={resetLoading}
+                      className="flex-1 rounded-2xl"
+                    >
+                      {resetLoading ? 'Resetting...' : 'Reset Password'}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                    <code className="flex-1 text-lg font-bold text-[#0f172a] tracking-wide">{resetTempPassword}</code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(resetTempPassword);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1500);
+                      }}
+                      className="rounded-xl gap-1"
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                  <Button onClick={() => { setResetUserId(null); setResetTempPassword(null); }} className="w-full rounded-2xl">Done</Button>
+                </>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>

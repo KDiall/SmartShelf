@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { Plus, Trash2, Store, Building2, Phone as PhoneIcon, Users, UsersIcon, Pill, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Store, Building2, Phone as PhoneIcon, Users, UsersIcon, Pill, ShoppingCart, ArrowLeft, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,8 @@ export default function AdminPharmaciesPage() {
   const [createError, setCreateError] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [newTempPassword, setNewTempPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function loadPharmacies() {
     if (!token) return;
@@ -85,6 +87,9 @@ export default function AdminPharmaciesPage() {
       setNewAdminName('');
       setNewPhone('');
       setShowAddModal(false);
+      if (created.temporaryPassword) {
+        setNewTempPassword(created.temporaryPassword);
+      }
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create pharmacy');
     } finally {
@@ -236,7 +241,7 @@ export default function AdminPharmaciesPage() {
           <DialogContent className="sm:max-w-md rounded-3xl">
             <DialogHeader>
               <DialogTitle>New Pharmacy Branch</DialogTitle>
-              <DialogDescription>Enter the pharmacy name and the admin&apos;s WhatsApp number. The admin will use this number to log in.</DialogDescription>
+              <DialogDescription>Enter the pharmacy name and the admin&apos;s phone number. A temporary password will be shown once after creation.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
@@ -248,9 +253,9 @@ export default function AdminPharmaciesPage() {
                 <Input id="adminName" placeholder="e.g. Mohamed Kamara" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="rounded-[14px]" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Admin WhatsApp Number *</Label>
+                <Label htmlFor="phone">Admin Phone Number *</Label>
                 <Input id="phone" type="tel" placeholder="+23231569311" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required className="rounded-[14px]" />
-                <p className="text-xs text-muted-foreground">The admin logs in with this number. An OTP is sent to it when they sign in.</p>
+                <p className="text-xs text-muted-foreground">The admin logs in with this number and their temporary password.</p>
               </div>
               {createError && (
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
@@ -261,6 +266,40 @@ export default function AdminPharmaciesPage() {
                 {creating ? 'Creating...' : 'Create Pharmacy'}
               </Button>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Temporary password modal */}
+        <Dialog open={!!newTempPassword} onOpenChange={() => setNewTempPassword(null)}>
+          <DialogContent className="sm:max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Admin Temporary Password</DialogTitle>
+              <DialogDescription>
+                Share this temporary password with the pharmacy admin. It will not be shown again.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <code className="flex-1 text-lg font-bold text-[#0f172a] tracking-wide">{newTempPassword}</code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newTempPassword) {
+                      navigator.clipboard.writeText(newTempPassword);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    }
+                  }}
+                  className="rounded-xl gap-1"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <Button onClick={() => setNewTempPassword(null)} className="w-full rounded-2xl">Done</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

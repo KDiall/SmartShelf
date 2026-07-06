@@ -14,7 +14,7 @@ export interface JwtPayload {
 export async function signToken(payload: JwtPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('90d')
+    .setExpirationTime('30d')
     .sign(JWT_SECRET);
 }
 

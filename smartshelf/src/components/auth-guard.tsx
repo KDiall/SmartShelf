@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const loadFromStorage = useAuthStore((s) => s.loadFromStorage);
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -15,10 +17,17 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   }, [loadFromStorage]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
       router.push('/login');
+      return;
     }
-  }, [isLoading, isAuthenticated, router]);
+
+    if (user?.mustChangePassword && pathname !== '/change-password') {
+      router.push('/change-password');
+    }
+  }, [isLoading, isAuthenticated, user, pathname, router]);
 
   if (isLoading || !isAuthenticated) {
     return (

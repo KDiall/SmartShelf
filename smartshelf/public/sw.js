@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const STATIC_CACHE = `smartshelf-static-${CACHE_VERSION}`;
 const API_CACHE = `smartshelf-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
@@ -6,7 +6,7 @@ const ASSET_CACHE = `smartshelf-assets-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   '/',
   '/login',
-  '/verify',
+  '/change-password',
   '/stock',
   '/orders',
   '/restock',
@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname === '/api/auth/send-otp' || url.pathname === '/api/auth/verify-otp') {
+  if (url.pathname === '/api/auth/login') {
     event.respondWith(networkOnly(request));
     return;
   }

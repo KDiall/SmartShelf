@@ -7,15 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { normalizePhone } from '@/lib/phone';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, loadFromStorage } = useAuthStore();
+  const { isAuthenticated, loadFromStorage, setAuth } = useAuthStore();
 
   useEffect(() => {
     loadFromStorage();
@@ -42,19 +44,25 @@ export default function LoginPage() {
     }
 
     try {
-      const res = await fetch('/api/auth/send-otp', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalizedPhone }),
+        body: JSON.stringify({ phone: normalizedPhone, password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to send OTP');
+        throw new Error(data.error || 'Login failed');
       }
 
-      router.push(`/verify?phone=${encodeURIComponent(normalizedPhone)}`);
+      setAuth(data.token, data.user);
+
+      if (data.user.mustChangePassword) {
+        router.replace('/change-password');
+      } else {
+        router.replace('/');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -90,7 +98,7 @@ export default function LoginPage() {
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-[#64748b] font-semibold text-sm">WhatsApp Number</Label>
+                <Label htmlFor="phone" className="text-[#64748b] font-semibold text-sm">Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -100,9 +108,29 @@ export default function LoginPage() {
                   required
                   className="text-lg rounded-[14px] border-[rgba(15,23,42,0.1)] focus:border-primary h-12"
                 />
-                <p className="text-xs text-[#94a3b8] font-medium">
-                  Enter your WhatsApp number (e.g. 031 569 311 or +232 31 569 311).
-                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[#64748b] font-semibold text-sm">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="text-lg rounded-[14px] border-[rgba(15,23,42,0.1)] focus:border-primary h-12 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0f172a]"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -113,17 +141,17 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                disabled={loading || !phone}
+                disabled={loading || !phone || !password}
                 className="w-full h-12 rounded-2xl font-bold text-base shadow-lg shadow-primary/20 transition-all duration-200 active:scale-[0.98]"
                 size="lg"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Sending...
+                    Logging in...
                   </span>
                 ) : (
-                  'Send OTP'
+                  'Log In'
                 )}
               </Button>
             </form>
@@ -131,7 +159,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-xs text-center text-[#94a3b8] font-medium">
-          Secured with WhatsApp verification
+          Secured with password authentication
         </p>
       </div>
     </div>

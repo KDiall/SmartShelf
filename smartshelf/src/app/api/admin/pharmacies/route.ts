@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { normalizePhone } from '@/lib/phone';
+import { generateTemporaryPassword, hashPassword } from '@/lib/password';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
@@ -51,23 +53,34 @@ export async function POST(request: Request) {
     data: { name, address: null, phone },
   });
 
-  await prisma.user.create({
+  const tempPassword = generateTemporaryPassword();
+  const passwordHash = await hashPassword(tempPassword);
+
+  const admin = await prisma.user.create({
     data: {
       phone,
       name: adminName || null,
       role: 'admin',
       verified: false,
       createdBy: currentUserId,
+      createdById: currentUserId,
       pharmacyId: pharmacy.id,
+      passwordHash,
+      mustChangePassword: true,
+      failedLoginAttempts: 0,
     },
   });
 
-  // No OTP is sent here. The admin's number is saved now and verified later:
-  // when the admin logs in, /api/auth/send-otp delivers a fresh OTP via WhatsApp.
+  await logAudit('user_created', {
+    userId: currentUserId,
+    targetUserId: admin.id,
+    pharmacyId: pharmacy.id,
+  });
+
   console.log(`[PHARMACY] Created "${name}" with admin ${phone}`);
 
   return NextResponse.json(
-    { ...pharmacy, adminPhone: phone },
+    { ...pharmacy, adminPhone: phone, temporaryPassword: tempPassword },
     { status: 201 }
   );
 }

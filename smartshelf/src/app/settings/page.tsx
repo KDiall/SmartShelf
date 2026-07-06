@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon, MessageCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Save, CheckCircle2, ArrowLeft, Building2, MapPin, Phone, User, Image as ImageIcon, LogOut, ShieldCheck, Store as StoreIcon, MessageCircle, RefreshCw, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UploadButton } from '@/lib/uploadthing';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -391,6 +391,25 @@ export default function SettingsPage() {
                 </Button>
               </div>
             )}
+
+            {/* Change Password */}
+            <div className="border-t border-border pt-6">
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/change-password')}
+                className="w-full justify-start h-auto p-4 bg-primary/5 hover:bg-primary/10 rounded-2xl"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Key className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-primary text-lg">Change Password</p>
+                    <p className="text-sm text-muted-foreground">Update your account password</p>
+                  </div>
+                </div>
+              </Button>
+            </div>
 
             {/* Logout */}
             <div className="border-t border-border pt-6">
