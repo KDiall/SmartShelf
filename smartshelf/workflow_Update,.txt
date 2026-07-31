@@ -1,0 +1,326 @@
+You are a senior Product Designer, UX Engineer, and Next.js developer working on the SmartShelf pharmacy inventory management system.
+
+IMPORTANT
+
+Before making any changes, analyze the existing SmartShelf project and preserve the current architecture.
+
+Do NOT redesign the application.
+
+Do NOT change authentication.
+
+Do NOT change user roles.
+
+Do NOT change reports.
+
+Do NOT change AI.
+
+Do NOT change offline functionality.
+
+The objective of this update is to optimize the pharmacy sales workflow based on real-world observations inside community pharmacies in Sierra Leone.
+
+======================================================
+BACKGROUND
+======================================================
+
+During field observation, pharmacists were found using a physical calculator to calculate the customer's total before recording the sale.
+
+Current workflow:
+
+Customer requests medicine
+
+↓
+
+Pharmacist uses calculator
+
+↓
+
+Calculates total manually
+
+↓
+
+Receives payment
+
+↓
+
+Records sale inside SmartShelf
+
+↓
+
+Inventory updates
+
+This means pharmacists are using TWO systems simultaneously:
+
+1. Calculator
+2. SmartShelf
+
+This creates unnecessary work and slows down customer service during busy periods.
+
+The goal of this update is to make SmartShelf itself become the calculator.
+
+The pharmacist should never need a separate calculator while recording a sale.
+
+======================================================
+NEW SALES EXPERIENCE
+======================================================
+
+Every medicine already has a stored selling price.
+
+Never ask the pharmacist to manually enter the medicine price during a sale.
+
+When a medicine is selected, SmartShelf should automatically know its selling price.
+
+======================================================
+BIG 5 QUICK SALE SCREEN
+======================================================
+
+The existing quick sale interface should become a lightweight Point of Sale.
+
+Each medicine tile should display:
+
+Medicine Name
+
+Selling Price
+
+Current Quantity Selected
+
+Large Plus button
+
+Large Minus button
+
+Example
+
++---------------------------+
+
+Paracetamol
+
+SLE 15
+
+[-] 2 [+]
+
+Subtotal: SLE 30
+
++---------------------------+
+
+Every tap on the + button increases quantity by one.
+
+Every tap on the - button decreases quantity.
+
+The subtotal updates instantly.
+
+======================================================
+RUNNING TOTAL
+======================================================
+
+Display a sticky summary at the bottom of the screen.
+
+Example
+
+--------------------------------
+
+Items
+
+3
+
+Total
+
+SLE 75
+
+--------------------------------
+
+This total must update immediately after every quantity change.
+
+No refresh.
+
+No save button.
+
+======================================================
+COMPLETE SALE
+======================================================
+
+When the pharmacist presses
+
+Complete Sale
+
+SmartShelf should:
+
+Validate stock
+
+Deduct inventory
+
+Create sale records
+
+Update dashboard
+
+Update reports
+
+Sync offline data exactly as the current implementation already does.
+
+Do not change the existing inventory logic.
+
+======================================================
+AMOUNT PAID
+======================================================
+
+After the total has been calculated,
+
+allow the pharmacist to enter
+
+Amount Paid
+
+Example
+
+Total
+
+SLE 75
+
+Customer Paid
+
+[100]
+
+Change
+
+SLE 25
+
+The change should calculate automatically.
+
+======================================================
+BULK SALES PAGE
+======================================================
+
+The current Bulk Sales page already supports multiple medicines.
+
+Preserve that functionality.
+
+However improve the experience.
+
+Instead of requiring unnecessary manual inputs,
+
+make quantity adjustment extremely fast.
+
+Each selected medicine should have
+
+Large +
+
+Large –
+
+buttons.
+
+Whenever quantity changes
+
+Update:
+
+Subtotal
+
+Grand Total
+
+Instantly.
+
+======================================================
+MEDICINE PRICES
+======================================================
+
+Medicine selling prices must always come from the database.
+
+The pharmacist should never type prices during checkout.
+
+Changing a medicine's selling price in Inventory should automatically affect future sales.
+
+Existing sales must preserve the historical selling price used during that transaction.
+
+======================================================
+CUSTOMER EXPERIENCE
+======================================================
+
+The goal is to serve customers faster.
+
+A pharmacist should be able to:
+
+Tap medicine
+
+Increase quantity
+
+See total
+
+Receive payment
+
+Record sale
+
+in only a few seconds.
+
+======================================================
+UI REQUIREMENTS
+======================================================
+
+Make buttons large enough for touch screens.
+
+Optimize for tablets.
+
+Optimize for low computer literacy.
+
+Avoid tiny icons.
+
+Avoid excessive typing.
+
+Minimize clicks.
+
+======================================================
+PERFORMANCE
+======================================================
+
+Running totals should be computed on the client side.
+
+Do not make API requests every time quantity changes.
+
+Inventory validation should happen only when completing the sale.
+
+======================================================
+OFFLINE
+======================================================
+
+Maintain the current offline-first architecture.
+
+Totals must work offline.
+
+Sales must work offline.
+
+Synchronization must continue exactly as before.
+
+======================================================
+DO NOT CHANGE
+======================================================
+
+Authentication
+
+JWT
+
+Users
+
+Roles
+
+AI chatbot
+
+WhatsApp
+
+Reports
+
+Dashboard
+
+Offline synchronization
+
+IndexedDB
+
+Service Worker
+
+Inventory calculations
+
+======================================================
+SUCCESS CRITERIA
+======================================================
+
+A pharmacist should no longer need a physical calculator.
+
+The entire customer billing process should happen inside SmartShelf.
+
+The application should feel like a lightweight Pharmacy Point of Sale while preserving its inventory management capabilities.
+
+At the end, summarize every file modified and explain why each change was necessary.
