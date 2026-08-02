@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-import { getWhatsAppStatus } from '@/lib/whatsapp';
+import { getBotStatus } from '@/lib/whatsapp';
 
 export async function GET(request: Request) {
   const apiKey = request.headers.get('x-api-key');
-  const expectedKey = process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY;
+  const expectedKey = process.env.OPENWA_API_KEY;
 
   if (!expectedKey) {
-    console.error('WHATSAPP_API_KEY is not configured');
+    console.error('OPENWA_API_KEY is not configured');
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
@@ -18,8 +18,9 @@ export async function GET(request: Request) {
 
   const envVars = {
     OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
-    WHATSAPP_API_KEY: !!(process.env.WHATSAPP_API_KEY || process.env.WHAPI_API_KEY),
-    WHATSAPP_SERVER_URL: process.env.WHATSAPP_SERVER_URL || process.env.WHAPI_BASE_URL || 'http://localhost:3700',
+    OPENWA_API_KEY: !!process.env.OPENWA_API_KEY,
+    OPENWA_URL: process.env.OPENWA_URL || 'http://localhost:2785',
+    OPENWA_WEBHOOK_URL: process.env.OPENWA_WEBHOOK_URL || 'not set',
     DATABASE_URL: !!process.env.DATABASE_URL,
     JWT_SECRET: !!process.env.JWT_SECRET,
     GENELINE_X_API_KEY: !!process.env.GENELINE_X_API_KEY,
@@ -54,10 +55,10 @@ export async function GET(request: Request) {
 
   let whatsAppTest = 'not tested';
   try {
-    const status = await getWhatsAppStatus();
-    whatsAppTest = status.connected
-      ? `OK (connected: ${status.phoneNumber || 'unknown'})`
-      : `FAILED: ${status.error || 'not connected'}`;
+    const status = await getBotStatus();
+    whatsAppTest = status.status === 'ready'
+      ? `OK (connected: ${status.phone || 'unknown'})`
+      : `FAILED: ${status.error || status.status || 'not connected'}`;
   } catch (err) {
     whatsAppTest = `ERROR: ${err instanceof Error ? err.message : 'unknown'}`;
   }
@@ -84,8 +85,8 @@ function buildAdvice(
     advice.push('OpenAI key issue: ' + openAiTest);
   }
 
-  if (!envVars.WHATSAPP_API_KEY) {
-    advice.push('WHATSAPP_API_KEY is NOT set. Add it to environment variables.');
+  if (!envVars.OPENWA_API_KEY) {
+    advice.push('OPENWA_API_KEY is NOT set. Add it to environment variables.');
   }
 
   if (!envVars.DATABASE_URL) {
@@ -100,9 +101,9 @@ function buildAdvice(
     advice.push('WhatsApp server issue: ' + whatsAppTest);
   }
 
-  if (envVars.OPENAI_API_KEY && envVars.WHATSAPP_API_KEY && !whatsAppTest.startsWith('FAILED') && !whatsAppTest.startsWith('ERROR')) {
+  if (envVars.OPENAI_API_KEY && envVars.OPENWA_API_KEY && !whatsAppTest.startsWith('FAILED') && !whatsAppTest.startsWith('ERROR')) {
     advice.push(
-      'Both OpenAI and WhatsApp keys are set. Verify the WhatsApp server is running and configured with the correct AGENT_URL.'
+      'All keys set. If the bot still does not respond, verify OpenWA is running and the webhook is registered correctly.'
     );
   }
 
