@@ -2,69 +2,66 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { normalizePhone } from '@/lib/phone';
 import { generateResponse } from '@/lib/rag';
+import { sendTextMessage, verifyOpenWAWebhook } from '@/lib/whatsapp';
 
-export async function GET(request: Request) {
-  const expectedKey = process.env.WHATSAPP_API_KEY;
-  const apiKey = request.headers.get('x-api-key');
-
-  if (!expectedKey) {
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
-  }
-
-  if (!apiKey || apiKey !== expectedKey) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET() {
   return NextResponse.json({ received: true });
 }
 
 export async function POST(request: Request) {
-  const expectedKey = process.env.WHATSAPP_API_KEY;
-  const apiKey = request.headers.get('x-api-key');
+  const rawBody = await request.text();
 
-  if (!expectedKey) {
-    console.error('WHATSAPP_API_KEY is not configured');
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
-  }
-
-  if (!apiKey || apiKey !== expectedKey) {
-    console.error('Unauthorized webhook attempt');
+  // Verify the request came from OpenWA
+  const signature = request.headers.get('x-openwa-signature') || '';
+  const headers = {
+    'x-openwa-event': request.headers.get('x-openwa-event'),
+    'x-openwa-delivery-id': request.headers.get('x-openwa-delivery-id'),
+  };
+  if (!verifyOpenWAWebhook(rawBody, signature, headers)) {
+    console.error('[Webhook] Invalid HMAC signature — rejecting');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let payload;
+  let payload: unknown;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  console.log('Webhook received:', JSON.stringify(payload).slice(0, 500));
+  const event = (payload as { event?: string }).event;
+  console.log(`[Webhook] OpenWA event: ${event}`);
 
-  // Handle non-message events (connected, disconnected)
-  if (payload.event !== 'message') {
-    console.log(`[Webhook] WhatsApp ${payload.event} event:`, JSON.stringify(payload));
+  // Only handle inbound messages from others (skip our own sends and non-message events)
+  if (event !== 'message.received') {
     return NextResponse.json({ received: true });
   }
 
-  const text = payload.message || '';
-  const from = payload.from; // This is the JID (e.g. 123456789@c.us)
-  const payloadPhone = payload.phoneE164 ? normalizePhone(payload.phoneE164) : '';
+  const data = (payload as { data?: { message?: { body?: string; from?: string; fromMe?: boolean; chatId?: string } } }).data;
+  const message = data?.message;
+
+  if (!message || message.fromMe) {
+    return NextResponse.json({ received: true });
+  }
+
+  const text = message.body?.trim() || '';
+  const from = message.from || ''; // e.g. "23276123456@c.us"
+  const chatId = message.chatId || from;
 
   if (!text || !from) {
     return NextResponse.json({ received: true });
   }
 
-  console.log(`Processing msg from ${from} phoneE164=${payload.phoneE164 || 'none'}: "${text.slice(0, 100)}"`);
+  console.log(`[Webhook] Message from ${from}: "${text.slice(0, 100)}"`);
 
-  // Resolve sender's pharmacy from their phone number
+  // Resolve the sender's pharmacy by their phone number
   const senderPhone = normalizePhone(from.split('@')[0]);
   let pharmacyId: string | undefined;
   let senderFound = false;
+
   try {
     let sender: { pharmacyId: string | null; role: string } | null = null;
 
-    // 1. Exact match by phone number extracted from JID
     if (senderPhone) {
       sender = await prisma.user.findUnique({
         where: { phone: senderPhone },
@@ -72,82 +69,43 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Try payload's phoneE164 if JID-based lookup failed
-    if (!sender && payloadPhone) {
-      sender = await prisma.user.findUnique({
-        where: { phone: payloadPhone },
-        select: { pharmacyId: true, role: true },
-      });
-    }
-
-    // 3. Fallback: try matching last digits (handles demo short codes like 7000
-    //    when the user texts from a real number like +23276000000, and LID JIDs
-    //    where getContact() resolved the real phone in phoneE164)
+    // Fallback: match by trailing digits (handles international prefix mismatches)
     if (!sender) {
       const rawDigits = from.split('@')[0].replace(/\D/g, '');
       const users = await prisma.user.findMany({
         select: { phone: true, pharmacyId: true, role: true },
       });
-      // Try matching by JID digits first, then by phoneE164 digits
-      const byJid = users.find((u) => rawDigits.endsWith(u.phone.replace(/\D/g, '')));
-      if (byJid) {
-        sender = byJid;
-      } else if (payloadPhone) {
-        const payloadDigits = payloadPhone.replace(/\D/g, '');
-        sender = users.find((u) => payloadDigits.endsWith(u.phone.replace(/\D/g, ''))) ?? null;
-      }
+      sender = users.find((u) => rawDigits.endsWith(u.phone.replace(/\D/g, ''))) ?? null;
     }
 
     senderFound = !!sender;
     pharmacyId = sender?.pharmacyId ?? undefined;
-    console.log(`Sender phone=${senderPhone} payloadPhone=${payloadPhone || 'none'} pharmacyId=${pharmacyId || 'none'} role=${sender?.role || 'unknown'}`);
+    console.log(`[Webhook] Resolved phone=${senderPhone} → pharmacyId=${pharmacyId || 'none'}`);
   } catch (err) {
-    console.error('Failed to look up sender pharmacy:', err);
+    console.error('[Webhook] Sender lookup failed:', err);
   }
 
   if (!senderFound) {
-    // Allow super admin via env var even if not in DB or JID mismatch
-    const superAdminPhone = normalizePhone(
-      process.env.NEXT_PUBLIC_WHATSAPP_SUPPLIER_NUMBER || '+23231569311'
+    console.log(`[Webhook] Unknown sender: ${senderPhone} — rejecting`);
+    await sendTextMessage(
+      from.split('@')[0],
+      'You are not registered with SmartShelf. Contact your pharmacy admin to create your account.'
     );
-    if ((senderPhone && superAdminPhone && senderPhone === superAdminPhone) ||
-        (payloadPhone && superAdminPhone && payloadPhone === superAdminPhone)) {
-      pharmacyId = undefined;
-      senderFound = true;
-      console.log('Super admin identified via env var fallback');
-    }
+    return NextResponse.json({ received: true });
   }
 
-  if (!senderFound) {
-    // Fallback: match by known WhatsApp LID (privacy JID) for the super admin
-    const superAdminLid = (process.env.SUPER_ADMIN_WHATSAPP_LID || '259554117988511').trim();
-    if (superAdminLid && from && from.startsWith(superAdminLid)) {
-      pharmacyId = undefined;
-      senderFound = true;
-      console.log('Super admin identified via LID fallback');
-    }
-  }
-
-  if (!senderFound) {
-    console.log(`Rejecting unknown sender: ${senderPhone}`);
-    return NextResponse.json({
-      answer: 'You are not registered with any pharmacy. Contact your pharmacy admin to create your account.',
-      to: from,
-    });
-  }
-
+  // Generate AI response scoped to the sender's pharmacy
   let reply: string;
   try {
     reply = await generateResponse(text, pharmacyId);
-    console.log(`AI response: "${reply.slice(0, 100)}"`);
+    console.log(`[Webhook] AI reply: "${reply.slice(0, 100)}"`);
   } catch (err) {
-    reply = `Server error: ${err instanceof Error ? err.message : 'unknown error'}`;
-    console.error('generateResponse threw:', err);
+    reply = 'Sorry, I hit an error processing your message. Please try again.';
+    console.error('[Webhook] generateResponse error:', err);
   }
 
-  // The local WhatsApp server expects the reply in the response
-  return NextResponse.json({ 
-    answer: reply,
-    to: from 
-  });
+  // Send the reply back via the bot session (OpenWA does not read our response body)
+  await sendTextMessage(from.split('@')[0], reply);
+
+  return NextResponse.json({ received: true });
 }
