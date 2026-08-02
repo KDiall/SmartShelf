@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppStatus, reconnectWhatsAppServer } from '@/lib/whatsapp';
+import { getBotStatus, startBotSession, logoutBotSession, getBotQR } from '@/lib/whatsapp';
 
 export async function GET(request: Request) {
   const role = request.headers.get('x-user-role');
@@ -7,15 +7,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  try {
-    const status = await getWhatsAppStatus();
-    return NextResponse.json(status);
-  } catch (err) {
-    return NextResponse.json(
-      { connected: false, error: err instanceof Error ? err.message : 'unknown error' },
-      { status: 500 }
-    );
+  const url = new URL(request.url);
+  const want = url.searchParams.get('want');
+
+  if (want === 'qr') {
+    const { qr, error } = await getBotQR();
+    if (!qr) return NextResponse.json({ error: error || 'QR not ready' }, { status: 503 });
+    return NextResponse.json({ qr });
   }
+
+  const status = await getBotStatus();
+  return NextResponse.json(status);
 }
 
 export async function POST(request: Request) {
@@ -24,13 +26,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  try {
-    const result = await reconnectWhatsAppServer();
+  const body = await request.json().catch(() => ({}));
+  const action = (body as { action?: string }).action;
+
+  if (action === 'logout') {
+    const result = await logoutBotSession();
     return NextResponse.json(result);
-  } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'unknown error' },
-      { status: 500 }
-    );
   }
+
+  const result = await startBotSession();
+  if (!result.ok) {
+    return NextResponse.json({ success: false, error: result.error }, { status: 502 });
+  }
+  return NextResponse.json({ success: true, sessionId: result.sessionId });
 }
