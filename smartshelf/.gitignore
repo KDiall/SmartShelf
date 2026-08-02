@@ -2,9 +2,6 @@
 
 # dependencies
 /node_modules
-/whatsapp-server/node_modules
-/whatsapp-server/.wwebjs_auth
-/whatsapp-server/.wwebjs_cache
 /.pnp
 .pnp.*
 .yarn/*
@@ -43,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# old whatsapp server (replaced by OpenWA)
+/whatsapp-server/
+
+# notes and design docs
+*.txt
+.devin/
