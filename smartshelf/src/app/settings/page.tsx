@@ -25,8 +25,9 @@ export default function SettingsPage() {
   const [location, setLocation] = useState('');
   const [avatar, setAvatar] = useState('');
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
-  const [whatsappStatus, setWhatsappStatus] = useState<{ connected: boolean; phoneNumber?: string | null; error?: string } | null>(null);
+  const [whatsappStatus, setWhatsappStatus] = useState<{ status: string; phone?: string | null; error?: string } | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappQr, setWhatsappQr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -52,6 +53,22 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  // Poll status while bot is connecting so QR appears automatically
+  useEffect(() => {
+    const s = whatsappStatus?.status;
+    if (!s || s === 'ready' || s === 'none' || s === 'failed' || s === 'disconnected') return;
+    const interval = setInterval(loadWhatsappStatus, 3000);
+    return () => clearInterval(interval);
+  }, [whatsappStatus?.status]);
+
+  // Fetch QR image whenever the bot is in qr_ready state
+  useEffect(() => {
+    if (whatsappStatus?.status !== 'qr_ready') { setWhatsappQr(null); return; }
+    fetchWhatsappQr();
+    const interval = setInterval(fetchWhatsappQr, 10_000);
+    return () => clearInterval(interval);
+  }, [whatsappStatus?.status]);
+
   async function loadWhatsappStatus() {
     if (!token) return;
     setWhatsappLoading(true);
@@ -62,34 +79,57 @@ export default function SettingsPage() {
       const data = await res.json();
       setWhatsappStatus(data);
     } catch (err) {
-      setWhatsappStatus({ connected: false, error: err instanceof Error ? err.message : 'unknown error' });
+      setWhatsappStatus({ status: 'disconnected', error: err instanceof Error ? err.message : 'unknown' });
     } finally {
       setWhatsappLoading(false);
     }
   }
 
-  async function reconnectWhatsapp() {
+  async function fetchWhatsappQr() {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/admin/whatsapp?want=qr', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) { const d = await res.json(); setWhatsappQr(d.qr); }
+    } catch { /* QR not ready yet */ }
+  }
+
+  async function startWhatsappBot() {
     if (!token) return;
     setWhatsappLoading(true);
     try {
       const res = await fetch('/api/admin/whatsapp', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.success) {
-        await loadWhatsappStatus();
+        setWhatsappStatus({ status: 'initializing' });
       } else {
-        setWhatsappStatus({ connected: false, error: data.error || 'Reconnection failed' });
+        setWhatsappStatus({ status: 'failed', error: data.error || 'Failed to start bot' });
       }
     } catch (err) {
-      setWhatsappStatus({ connected: false, error: err instanceof Error ? err.message : 'unknown error' });
+      setWhatsappStatus({ status: 'failed', error: err instanceof Error ? err.message : 'unknown' });
     } finally {
       setWhatsappLoading(false);
     }
+  }
+
+  async function logoutWhatsappBot() {
+    if (!token) return;
+    setWhatsappLoading(true);
+    try {
+      await fetch('/api/admin/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+      setWhatsappStatus({ status: 'none' });
+      setWhatsappQr(null);
+    } catch { /* ignore */ }
+    finally { setWhatsappLoading(false); }
   }
 
   const logout = useAuthStore((s) => s.logout);
@@ -225,47 +265,94 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* WhatsApp Connection */}
+            {/* WhatsApp Bot — super_admin manages the shared bot number */}
             {user?.role === 'super_admin' && (
               <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '150ms' }}>
                 <CardHeader>
-                  <CardTitle className="text-lg">WhatsApp Connection</CardTitle>
+                  <CardTitle className="text-lg">WhatsApp Bot</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Status row */}
                   <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
                     <div className="flex items-center gap-3">
                       <MessageCircle className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="font-semibold text-sm">Status</p>
+                        <p className="font-semibold text-sm">Bot Status</p>
                         <p className="text-xs text-muted-foreground">
                           {whatsappLoading
                             ? 'Checking...'
-                            : whatsappStatus
-                            ? whatsappStatus.connected
-                              ? `Connected (${whatsappStatus.phoneNumber || 'unknown'})`
-                              : `Disconnected: ${whatsappStatus.error || 'not connected'}`
-                            : 'Unknown'}
+                            : whatsappStatus?.status === 'ready'
+                            ? `Connected — ${whatsappStatus.phone || 'active'}`
+                            : whatsappStatus?.status === 'qr_ready'
+                            ? 'Waiting for QR scan...'
+                            : whatsappStatus?.status === 'initializing' || whatsappStatus?.status === 'authenticating'
+                            ? 'Connecting...'
+                            : whatsappStatus?.error || 'Not connected'}
                         </p>
                       </div>
                     </div>
-                    <Badge variant={whatsappStatus?.connected ? 'default' : 'destructive'}>
-                      {whatsappStatus?.connected ? 'Connected' : 'Disconnected'}
+                    <Badge variant={whatsappStatus?.status === 'ready' ? 'default' : 'destructive'}
+                      className={whatsappStatus?.status === 'ready' ? 'bg-emerald-600' : ''}>
+                      {whatsappStatus?.status === 'ready' ? 'Online' : 'Offline'}
                     </Badge>
                   </div>
-                  {user?.role === 'super_admin' && (
+
+                  {/* QR code — shown when bot is waiting to be scanned */}
+                  {whatsappStatus?.status === 'qr_ready' && (
+                    <div className="flex flex-col items-center gap-3 p-4 rounded-xl border border-dashed border-border">
+                      {whatsappQr ? (
+                        <>
+                          <p className="text-sm font-semibold text-center">Scan with the bot phone</p>
+                          <img src={whatsappQr} alt="WhatsApp QR" className="w-52 h-52 rounded-xl" />
+                          <p className="text-xs text-muted-foreground text-center">
+                            Open WhatsApp on the bot phone → Linked Devices → Link a device
+                          </p>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating QR code...
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Connecting spinner */}
+                  {(whatsappStatus?.status === 'initializing' || whatsappStatus?.status === 'authenticating') && (
+                    <div className="flex items-center justify-center gap-2 p-4 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {whatsappStatus.status === 'authenticating' ? 'Authenticating...' : 'Starting bot...'}
+                    </div>
+                  )}
+
+                  {/* Start bot button */}
+                  {(!whatsappStatus || whatsappStatus.status === 'none' || whatsappStatus.status === 'disconnected' || whatsappStatus.status === 'failed') && (
                     <Button
                       type="button"
-                      variant="outline"
-                      onClick={reconnectWhatsapp}
+                      onClick={startWhatsappBot}
                       disabled={whatsappLoading}
-                      className="w-full h-12 rounded-xl gap-2"
+                      className="w-full h-12 rounded-xl gap-2 bg-[#25d366] hover:bg-[#1da851] text-white font-semibold"
                     >
-                      {whatsappLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
-                      {whatsappLoading ? 'Reconnecting...' : 'Reconnect WhatsApp Server'}
+                      {whatsappLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
+                      {whatsappLoading ? 'Starting...' : 'Start WhatsApp Bot'}
                     </Button>
                   )}
+
+                  {/* Reconnect / logout buttons when active */}
+                  {whatsappStatus?.status === 'ready' && (
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" onClick={startWhatsappBot} disabled={whatsappLoading} className="flex-1 h-11 rounded-xl gap-2">
+                        {whatsappLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        Reconnect
+                      </Button>
+                      <Button type="button" variant="outline" onClick={logoutWhatsappBot} disabled={whatsappLoading} className="flex-1 h-11 rounded-xl gap-2 border-destructive/40 text-destructive hover:bg-destructive/5">
+                        Logout Bot
+                      </Button>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
-                    If disconnected, scan the QR code at the WhatsApp server connect page.
+                    This is the shared bot number. All pharmacies can message it for inventory and treatment queries. It also sends restock order notifications.
                   </p>
                 </CardContent>
               </Card>
