@@ -125,7 +125,7 @@ export async function startBotSession(): Promise<{ ok: boolean; sessionId?: stri
 
   if (!sessionId) {
     // Create the session
-    const created = await openwaRequest('/api/sessions', { name: BOT_SESSION_NAME, engine: 'whatsapp-web.js' }, 'POST');
+    const created = await openwaRequest('/api/sessions', { name: BOT_SESSION_NAME }, 'POST');
     if (!created.ok) {
       return { ok: false, error: `Failed to create bot session (${created.status}): ${created.text}` };
     }
