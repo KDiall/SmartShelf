@@ -37,16 +37,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const data = (payload as { data?: { message?: { body?: string; from?: string; fromMe?: boolean; chatId?: string } } }).data;
-  const message = data?.message;
+  // OpenWA dispatches the IncomingMessage directly as `data` (not nested inside data.message)
+  const data = (payload as { data?: { body?: string; from?: string; fromMe?: boolean; chatId?: string } }).data;
 
-  if (!message || message.fromMe) {
+  if (!data || data.fromMe) {
     return NextResponse.json({ received: true });
   }
 
-  const text = message.body?.trim() || '';
-  const from = message.from || ''; // e.g. "23276123456@c.us"
-  const chatId = message.chatId || from;
+  const text = data.body?.trim() || '';
+  const from = data.from || ''; // e.g. "23276123456@c.us"
+  const chatId = data.chatId || from;
 
   if (!text || !from) {
     return NextResponse.json({ received: true });
