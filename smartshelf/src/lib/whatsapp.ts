@@ -53,8 +53,9 @@ async function openwaRequest(
 async function findBotSession(): Promise<string | null> {
   const result = await openwaRequest('/api/sessions?limit=50', undefined, 'GET');
   if (!result.ok) return null;
-  const data = result.data as { items?: { id: string; name: string }[] };
-  const match = data?.items?.find((s) => s.name === BOT_SESSION_NAME);
+  // OpenWA returns a plain array, not { items: [] }
+  const sessions = result.data as { id: string; name: string }[];
+  const match = Array.isArray(sessions) ? sessions.find((s) => s.name === BOT_SESSION_NAME) : null;
   return match?.id ?? null;
 }
 
@@ -89,8 +90,9 @@ export async function getBotQR(): Promise<{ qr: string | null; error?: string }>
 
   const result = await openwaRequest(`/api/sessions/${sessionId}/qr`, undefined, 'GET');
   if (!result.ok) return { qr: null, error: `QR not ready (${result.status})` };
-  const d = result.data as { qr?: string };
-  return { qr: d?.qr ?? null };
+  // OpenWA QR response uses `qrCode`, not `qr`
+  const d = result.data as { qrCode?: string };
+  return { qr: d?.qrCode ?? null };
 }
 
 // Register the SmartShelf webhook on OpenWA for a session (skips if already registered)
@@ -100,14 +102,15 @@ async function ensureWebhookRegistered(sessionId: string): Promise<void> {
   // List existing webhooks to avoid duplicates
   const list = await openwaRequest(`/api/sessions/${sessionId}/webhooks`, undefined, 'GET');
   if (list.ok) {
-    const existing = (list.data as { items?: { url: string }[] })?.items ?? [];
+    // OpenWA returns a plain array, not { items: [] }
+    const existing = Array.isArray(list.data) ? (list.data as { url: string }[]) : [];
     if (existing.some((w) => w.url === OPENWA_WEBHOOK_URL)) return; // already registered
   }
 
+  // `active` is NOT in CreateWebhookDto (only UpdateWebhookDto) — omit to avoid 400
   const body: Record<string, unknown> = {
     url: OPENWA_WEBHOOK_URL,
     events: ['message.received'],
-    active: true,
   };
   if (OPENWA_WEBHOOK_SECRET) body.secret = OPENWA_WEBHOOK_SECRET;
 
@@ -136,8 +139,8 @@ export async function startBotSession(): Promise<{ ok: boolean; sessionId?: stri
 
   // Start it (if it's not already running)
   const started = await openwaRequest(`/api/sessions/${sessionId}/start`, {}, 'POST');
-  if (!started.ok && started.status !== 409) {
-    // 409 = already started, that's fine
+  if (!started.ok && started.status !== 400) {
+    // 400 = already started, that's fine
     return { ok: false, error: `Failed to start session (${started.status}): ${started.text}` };
   }
 
