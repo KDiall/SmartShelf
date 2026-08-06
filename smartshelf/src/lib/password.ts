@@ -2,18 +2,8 @@ import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 12;
 
-const TEMP_PASSWORD_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
 export function generateTemporaryPassword(): string {
-  const segments = [4, 3, 2];
-  const parts = segments.map((len) => {
-    let result = '';
-    for (let i = 0; i < len; i++) {
-      result += TEMP_PASSWORD_CHARS.charAt(Math.floor(Math.random() * TEMP_PASSWORD_CHARS.length));
-    }
-    return result;
-  });
-  return `RX-${parts[0]}-${parts[1]}${parts[2]}`;
+  return '123456';
 }
 
 export async function hashPassword(plaintext: string): Promise<string> {

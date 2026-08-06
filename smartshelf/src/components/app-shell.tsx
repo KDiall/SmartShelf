@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { usePwa } from '@/hooks/use-pwa';
 import { useSync } from '@/hooks/use-sync';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -206,6 +207,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </div>
       </nav>
+
+      <PwaInstallPrompt />
     </div>
   );
 }
