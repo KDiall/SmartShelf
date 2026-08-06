@@ -34,9 +34,7 @@ export default function ChangePasswordPage() {
   }, [token, router]);
 
   function validate(password: string): string | null {
-    if (password.length < 8) return 'Minimum 8 characters';
-    if (!/[A-Z]/.test(password)) return 'At least one uppercase letter';
-    if (!/[a-z]/.test(password)) return 'At least one lowercase letter';
+    if (password.length < 6) return 'Minimum 6 characters';
     if (!/[0-9]/.test(password)) return 'At least one number';
     return null;
   }
@@ -170,7 +168,7 @@ export default function ChangePasswordPage() {
                   </button>
                 </div>
                 <p className="text-xs text-[#94a3b8] font-medium">
-                  Min 8 chars, uppercase, lowercase, and number.
+                  Min 6 characters with at least one number.
                 </p>
               </div>
 
