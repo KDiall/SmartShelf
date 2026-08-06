@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     role: user.role,
     verified: user.verified,
     pharmacyId: user.pharmacyId,
+    mustChangePassword: user.mustChangePassword,
     createdAt: user.createdAt.toISOString(),
   });
 }

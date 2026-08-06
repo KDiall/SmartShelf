@@ -170,9 +170,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </div>
 
-            <div className="hidden lg:block text-xs text-[#64748b] font-semibold">
-              {format(new Date(), 'MMM d, yyyy')}
-            </div>
+            {mounted && (
+              <div className="hidden lg:block text-xs text-[#64748b] font-semibold">
+                {format(new Date(), 'MMM d, yyyy')}
+              </div>
+            )}
 
             <OnlineIndicator />
           </div>

@@ -71,7 +71,20 @@ export default function ChangePasswordPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to change password');
+      if (!res.ok) {
+        // The stored session points to a user that no longer exists (e.g.
+        // after a database reseed) or the token is invalid. Log out instead
+        // of trapping the user on this page.
+        const sessionError =
+          res.status === 404 ||
+          (res.status === 401 && data.error !== 'Current password is incorrect');
+        if (sessionError) {
+          logout();
+          router.replace('/login');
+          return;
+        }
+        throw new Error(data.error || 'Failed to change password');
+      }
 
       setAuth(data.token, data.user);
       setSuccess(true);
@@ -223,6 +236,18 @@ export default function ChangePasswordPage() {
                   Cancel
                 </Button>
               )}
+
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  logout();
+                  router.replace('/login');
+                }}
+                className="w-full rounded-2xl font-semibold text-[#64748b]"
+              >
+                Log out
+              </Button>
             </form>
           </CardContent>
         </Card>
