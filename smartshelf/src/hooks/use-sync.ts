@@ -12,10 +12,13 @@ export function useSync() {
   const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
-    if (online) {
-      bootstrapFromServer(user?.id, token ?? undefined, user?.pharmacyId).then(() => {
-        syncPendingSales(token ?? undefined).then(() => loadData());
+    if (online && token) {
+      bootstrapFromServer(user?.id, token, user?.pharmacyId).then(() => {
+        syncPendingSales(token).then(() => loadData());
       });
+    } else if (online) {
+      // Not authenticated yet — no point fetching server data without a token.
+      loadData();
     } else {
       if ('serviceWorker' in navigator && 'SyncManager' in window) {
         navigator.serviceWorker.ready.then((reg) => {
