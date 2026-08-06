@@ -82,6 +82,7 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       id: crypto.randomUUID(),
       medicineId,
       quantity,
+      unitPrice: medicine.sellingPrice ?? 0,
       soldAt: new Date().toISOString(),
       synced: false,
       userId: getUserId(),
@@ -120,10 +121,14 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
       }
 
       for (const { medicineId, quantity } of items) {
+        const medicine = await idb.medicines.get(medicineId);
+        if (!medicine) throw new Error('Medicine not found');
+
         const sale: Sale = {
           id: crypto.randomUUID(),
           medicineId,
           quantity,
+          unitPrice: medicine.sellingPrice ?? 0,
           soldAt: new Date().toISOString(),
           synced: false,
           userId: getUserId(),
@@ -131,18 +136,15 @@ export const usePharmacyStore = create<PharmacyStore>((set, get) => ({
         };
         await idb.pendingSales.put(sale);
 
-        const medicine = await idb.medicines.get(medicineId);
-        if (medicine) {
-          const updated: Medicine = {
-            ...medicine,
-            currentStock: medicine.currentStock - quantity,
-            updatedAt: new Date().toISOString(),
-          };
-          if (updated.isBig5 && updated.currentStock <= 0) {
-            updated.isBig5 = false;
-          }
-          await idb.medicines.put(updated);
+        const updated: Medicine = {
+          ...medicine,
+          currentStock: medicine.currentStock - quantity,
+          updatedAt: new Date().toISOString(),
+        };
+        if (updated.isBig5 && updated.currentStock <= 0) {
+          updated.isBig5 = false;
         }
+        await idb.medicines.put(updated);
       }
     });
 

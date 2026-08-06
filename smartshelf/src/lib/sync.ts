@@ -49,6 +49,10 @@ export async function bootstrapFromServer(userId?: string, authToken?: string, p
     const local = await idb.medicines.get(med.id);
     if (!local) {
       await idb.medicines.put(med);
+    } else if (med.sellingPrice && !local.sellingPrice) {
+      // Cache existed before selling prices were added: pull in the price
+      // without clobbering locally-held stock.
+      await idb.medicines.put({ ...local, sellingPrice: med.sellingPrice });
     }
   }
 

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { usePharmacyStore } from '@/store/pharmacy';
 import { useAuthStore } from '@/store/auth';
 import { MedicineTile } from '@/components/medicine-tile';
+import { SaleCheckoutBar } from '@/components/sale-checkout-bar';
 import { AuthGuard } from '@/components/auth-guard';
 import { useSync } from '@/hooks/use-sync';
 import { useCountUp } from '@/hooks/use-count-up';
@@ -13,14 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Clock, Pill, ShoppingBag, Plus, Edit3, X } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { AlertTriangle, Clock, Pill, ShoppingBag, Plus } from 'lucide-react';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -102,10 +96,12 @@ const BIG5_GRADIENTS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { medicines, sales, alerts, healthScore, isLoaded, loadData, updateMedicine } = usePharmacyStore();
+  const { medicines, sales, alerts, healthScore, isLoaded, loadData, updateMedicine, recordBulkSales } = usePharmacyStore();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   useSync();
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (token) loadData();
@@ -146,6 +142,48 @@ export default function HomePage() {
     const med = medicines.find((m) => m.id === id);
     if (med) {
       await updateMedicine({ ...med, isBig5: false });
+    }
+  }
+
+  function handleIncrement(id: string) {
+    setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  }
+
+  function handleDecrement(id: string) {
+    setCart((prev) => {
+      const next = { ...prev };
+      const qty = (next[id] || 0) - 1;
+      if (qty <= 0) delete next[id];
+      else next[id] = qty;
+      return next;
+    });
+  }
+
+  const cartItems = useMemo(
+    () =>
+      Object.entries(cart)
+        .filter(([, qty]) => qty > 0)
+        .map(([medicineId, quantity]) => ({
+          medicineId,
+          quantity,
+          medicine: medicines.find((m) => m.id === medicineId),
+        })),
+    [cart, medicines]
+  );
+  const cartCount = cartItems.length;
+  const cartQuantity = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const cartTotal = cartItems.reduce((s, i) => s + (i.medicine?.sellingPrice ?? 0) * i.quantity, 0);
+
+  async function handleCompleteSale() {
+    const items = cartItems.map(({ medicineId, quantity }) => ({ medicineId, quantity }));
+    if (items.length === 0) return;
+    setSaving(true);
+    try {
+      await recordBulkSales(items);
+      setCart({});
+      await loadData();
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -272,7 +310,7 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge className="bg-white text-primary border-primary/20 font-bold text-[10px] px-3 py-1 uppercase tracking-widest shadow-sm">
-                  1-Tap Log
+                  Select &amp; Checkout
                 </Badge>
                 <Button
                   variant="outline"
@@ -312,11 +350,27 @@ export default function HomePage() {
                     key={med.id}
                     medicine={med}
                     gradient={BIG5_GRADIENTS[idx % BIG5_GRADIENTS.length]}
+                    quantity={cart[med.id] || 0}
+                    onIncrement={handleIncrement}
+                    onDecrement={handleDecrement}
                     onEdit={handleEditBig5}
                     onRemove={handleRemoveBig5}
                   />
                 ))}
               </div>
+            )}
+
+            {cartCount > 0 && (
+              <>
+                <SaleCheckoutBar
+                  itemCount={cartCount}
+                  totalQuantity={cartQuantity}
+                  total={cartTotal}
+                  saving={saving}
+                  onComplete={handleCompleteSale}
+                />
+                <div className="h-36 lg:h-0" aria-hidden="true" />
+              </>
             )}
           </section>
         </div>

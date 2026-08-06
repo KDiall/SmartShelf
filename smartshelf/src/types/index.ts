@@ -11,6 +11,7 @@ export interface Medicine {
   reorderQuantity: number;
   expiryDate: string;
   costPerUnit: number;
+  sellingPrice: number;
   isBig5: boolean;
   userId?: string;
   pharmacyId?: string;
@@ -22,6 +23,7 @@ export interface Sale {
   id: string;
   medicineId: string;
   quantity: number;
+  unitPrice?: number;
   soldAt: string;
   synced: boolean;
   userId?: string;

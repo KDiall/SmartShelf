@@ -49,6 +49,7 @@ export async function PUT(
       reorderQuantity: body.reorderQuantity,
       expiryDate: body.expiryDate,
       costPerUnit: body.costPerUnit,
+      sellingPrice: body.sellingPrice ?? body.costPerUnit,
       isBig5: body.isBig5,
     },
   });

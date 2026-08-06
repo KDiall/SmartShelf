@@ -27,6 +27,7 @@ const medicineSchema = z.object({
     { message: 'This medicine has expired. Please select a valid date.' }
   ),
   costPerUnit: z.coerce.number().min(0, 'Must be 0 or more'),
+  sellingPrice: z.coerce.number().min(0, 'Must be 0 or more'),
   isBig5: z.boolean(),
 });
 
@@ -60,6 +61,7 @@ export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', bi
       reorderQuantity: defaultValues?.reorderQuantity ?? 50,
       expiryDate: defaultValues?.expiryDate || '',
       costPerUnit: defaultValues?.costPerUnit ?? 0,
+      sellingPrice: defaultValues?.sellingPrice ?? defaultValues?.costPerUnit ?? 0,
       isBig5: defaultValues?.isBig5 || false,
     },
   });
@@ -209,6 +211,25 @@ export function MedicineForm({ defaultValues, onSubmit, submitLabel = 'Save', bi
             <p className="text-sm text-red-500">{errors.costPerUnit.message}</p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="sellingPrice">Selling Price (Le)</Label>
+        <Input
+          id="sellingPrice"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          onFocus={(e) => e.target.select()}
+          {...register('sellingPrice')}
+          className="rounded-xl"
+        />
+        {errors.sellingPrice && (
+          <p className="text-sm text-red-500">{errors.sellingPrice.message}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Shown in the sale calculator and used for checkout totals. You can change this anytime.
+        </p>
       </div>
 
       <div>

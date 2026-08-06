@@ -26,6 +26,7 @@ export default function EditMedicinePage() {
     reorderQuantity: number;
     expiryDate: string;
     costPerUnit: number;
+    sellingPrice?: number;
     isBig5?: boolean;
   }) {
     if (!medicine) return;

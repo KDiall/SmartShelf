@@ -8,9 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Loader2, Search, Pill, Box } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ArrowLeft, Plus, Trash2, CheckCircle2, Pill } from 'lucide-react';
+import { formatMoney } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SaleCheckoutBar } from '@/components/sale-checkout-bar';
 import Select from 'react-select';
 
 interface LineItem {
@@ -20,6 +21,7 @@ interface LineItem {
   quantity: number;
   maxStock: number;
   unit: string;
+  unitPrice: number;
 }
 
 const UNIT_OPTIONS = ['piece', 'pack', 'carton', 'box', 'bottle', 'vial', 'sachet'];
@@ -31,7 +33,6 @@ export default function BulkSalePage() {
   const [items, setItems] = useState<LineItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (token) loadData();
@@ -50,7 +51,7 @@ export default function BulkSalePage() {
   function addItem() {
     setItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), medicineId: '', medicineName: '', quantity: 1, maxStock: 0, unit: 'piece' },
+      { id: crypto.randomUUID(), medicineId: '', medicineName: '', quantity: 1, maxStock: 0, unit: 'piece', unitPrice: 0 },
     ]);
   }
 
@@ -69,23 +70,22 @@ export default function BulkSalePage() {
           updated.maxStock = med?.currentStock || 0;
           updated.quantity = 1;
           updated.unit = med?.unit || 'piece';
+          updated.unitPrice = med?.sellingPrice ?? 0;
         }
         return updated;
       })
     );
   }
 
-  async function handleSubmit() {
+  async function handleComplete() {
     const validItems = items.filter((i) => i.medicineId && i.quantity > 0);
     if (validItems.length === 0) return;
 
     const overStock = validItems.find((i) => i.quantity > i.maxStock);
     if (overStock) {
-      setError(`Not enough stock for ${overStock.medicineName}: ${overStock.quantity} requested, ${overStock.maxStock} available.`);
-      return;
+      throw new Error(`Not enough stock for ${overStock.medicineName}: ${overStock.quantity} requested, ${overStock.maxStock} available.`);
     }
 
-    setError('');
     setSaving(true);
     try {
       await recordBulkSales(validItems.map((i) => ({ medicineId: i.medicineId, quantity: i.quantity })));
@@ -93,8 +93,6 @@ export default function BulkSalePage() {
       setTimeout(() => {
         router.push('/');
       }, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record sale');
     } finally {
       setSaving(false);
     }
@@ -125,6 +123,7 @@ export default function BulkSalePage() {
 
   const totalItems = items.filter((i) => i.medicineId && i.quantity > 0).length;
   const totalQuantity = items.reduce((s, i) => s + (i.medicineId ? i.quantity : 0), 0);
+  const grandTotal = items.reduce((s, i) => s + (i.medicineId ? (i.unitPrice || 0) * i.quantity : 0), 0);
 
   return (
     <AuthGuard>
@@ -162,12 +161,6 @@ export default function BulkSalePage() {
             <p className="text-sm text-muted-foreground">
               Record multiple sales at once. Select medicines and enter quantities.
             </p>
-
-            {error && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
-                {error}
-              </div>
-            )}
 
             {items.length > 0 && (
               <div className="space-y-3">
@@ -258,6 +251,20 @@ export default function BulkSalePage() {
                           )}
                         </div>
                       </div>
+
+                      {item.medicineId && (
+                        <div className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2">
+                          <span className="text-xs font-semibold text-muted-foreground">Price</span>
+                          <div className="text-right">
+                            <p className="text-xs font-semibold text-muted-foreground">
+                              {formatMoney(item.unitPrice)} × {item.quantity}
+                            </p>
+                            <p className="text-lg font-black text-primary leading-tight">
+                              {formatMoney((item.unitPrice || 0) * item.quantity)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -274,29 +281,16 @@ export default function BulkSalePage() {
             </Button>
 
             {totalItems > 0 && (
-              <Card className="glass-card rounded-2xl border-0 entrance" style={{ animationDelay: '200ms' }}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-foreground">
-                      {totalItems} item{totalItems !== 1 ? 's' : ''} · {totalQuantity} unit
-                      {totalQuantity !== 1 ? 's' : ''}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Ready to record</p>
-                  </div>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={saving}
-                    className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 gap-2 text-base font-bold"
-                  >
-                    {saving ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <ShoppingCart className="h-5 w-5" />
-                    )}
-                    {saving ? 'Recording...' : 'Complete Sale'}
-                  </Button>
-                </CardContent>
-              </Card>
+              <>
+                <SaleCheckoutBar
+                  itemCount={totalItems}
+                  totalQuantity={totalQuantity}
+                  total={grandTotal}
+                  saving={saving}
+                  onComplete={handleComplete}
+                />
+                <div className="h-36 lg:h-0" aria-hidden="true" />
+              </>
             )}
 
             {items.length === 0 && (

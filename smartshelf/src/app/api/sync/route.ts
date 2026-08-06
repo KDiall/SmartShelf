@@ -34,11 +34,14 @@ export async function POST(request: Request) {
       update: {
         quantity: sale.quantity,
         synced: true,
+        // Keep the originally recorded unitPrice on retried syncs so history
+        // reflects what the patient actually paid, not the current price.
       },
       create: {
         id: sale.id,
         medicineId: sale.medicineId,
         quantity: sale.quantity,
+        unitPrice: sale.unitPrice || medicine.sellingPrice || 0,
         soldAt: new Date(sale.soldAt),
         synced: true,
         userId,

@@ -78,6 +78,7 @@ model Medicine {
   reorderQuantity  Int      @default(50)
   expiryDate       String
   costPerUnit      Float
+  sellingPrice     Float    @default(0)
   isBig5           Boolean  @default(false)
   userId           String?
   user             User?    @relation(fields: [userId], references: [id])
@@ -93,6 +94,7 @@ model Sale {
   medicineId String
   medicine   Medicine  @relation(fields: [medicineId], references: [id], onDelete: Cascade)
   quantity   Int       @default(1)
+  unitPrice  Float     @default(0)
   soldAt     DateTime
   synced     Boolean   @default(true)
   userId     String?

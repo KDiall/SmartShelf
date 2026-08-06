@@ -50,7 +50,7 @@ export default function MedicinesPage() {
   async function handleAddMedicine(data: {
     name: string; image?: string | null; unit: string;
     currentStock: number; reorderThreshold: number; reorderQuantity: number;
-    expiryDate: string; costPerUnit: number; isBig5: boolean;
+    expiryDate: string; costPerUnit: number; sellingPrice: number; isBig5: boolean;
   }) {
     const user = useAuthStore.getState().user;
     const newMed: Medicine = {

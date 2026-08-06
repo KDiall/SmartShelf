@@ -57,6 +57,7 @@ export default function StockPage() {
     reorderQuantity: number;
     expiryDate: string;
     costPerUnit: number;
+    sellingPrice: number;
     isBig5?: boolean;
   }) {
     const user = useAuthStore.getState().user;
